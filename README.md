@@ -1,6 +1,6 @@
 # Luma · Le jardin vivant
 
-Un jeu original d’élevage et d’observation de vie artificielle. Une créature, Milo, explore un terrarium, digère réellement ses repas et apprend à associer leurs signaux sensoriels à leurs effets biologiques. Interface française, tactile et adaptée au portrait.
+Un jeu original d’élevage et d’observation de vie artificielle. Une créature, Milo, explore un terrarium, digère réellement ses repas et apprend à associer les aliments et les objets à leurs effets internes. Interface française, tactile et adaptée au portrait.
 
 [Aperçu mobile](docs/previews/android-portrait.png) · [Aperçu ordinateur](docs/previews/desktop.png) · [Résultats de validation](docs/validation.md)
 
@@ -22,6 +22,18 @@ Ouvrir l’adresse affichée par Vite. Pour jouer sur Android depuis le même r�
 
 Au départ, tous les aliments sont inconnus. Dans ce premier monde, le grain solaire est nourrissant, la perle de rosée moins énergétique et la baie corail toxique. **Le cerveau ne dispose pas de cette information.** Il continue d’explorer occasionnellement même après un apprentissage négatif.
 
+## Étape 2 : curiosité et objets
+
+La palette **Objets** permet de déposer un carillon de graines, un coussin de mousse ou un galet prismatique, puis de les retirer en touchant leur emplacement avec **Retirer un objet**. Le jardin commence sans objets ; les anciennes sauvegardes conservent leur environnement. Jusqu’à 12 objets peuvent être présents.
+
+Milo peut manquer de stimulation, se fatiguer et ressentir du stress. Il perçoit les objets proches sans connaître leurs effets, les approche et interagit pendant trois secondes. Les changements réellement vécus alimentent une mémoire distincte de celle des repas. Une même apparence peut donc devenir appréciée ou évitée selon ses conséquences. Les objets ont une récupération de huit secondes après une interaction.
+
+Dans les recettes initiales, le carillon stimule avec un coût en fatigue et énergie, la mousse peut soulager fatigue et stress, tandis que le galet stimule mais peut être éprouvant. Ces propriétés sont la physique du monde, **pas des préférences accessibles aux décisions**. La satiété sensorielle, la fatigue et les expériences passées font évoluer leur intérêt. Milo peut préférer une stimulation quand il s’ennuie et un objet apaisant lorsqu’il est fatigué. Une faim urgente conserve la priorité sur l’exploration lorsqu’un aliment est choisi.
+
+**Observer Milo** révèle les motivations, les associations alimentaires, la mémoire des objets et les effets attendus appris. La perception reste affichable à la demande. L’alimentation, la pause, les vitesses et l’export/import restent disponibles.
+
+[Conception et analyse du moteur existant](docs/curiosity.md) · [Aperçu ordinateur](docs/previews/curiosity-desktop.png) · [Aperçu Android portrait](docs/previews/curiosity-android-portrait.png)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -42,7 +54,9 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | `metabolism.ts` | Capacité digestive, absorption différée, énergie, faim, toxines, santé, renforcement interne |
 | `brain.ts` | Mémoire associative par signal sensoriel, règle delta |
 | `perception.ts` | Filtrage spatial ; la composition chimique n’est jamais exposée aux décisions |
-| `decisions.ts` | Arbitrage faim, valeur apprise, distance et exploration |
+| `curiosity.ts` | Stimulation, fatigue, stress, motivations et apprentissage des effets d’interaction |
+| `objects.ts` | Recettes physiques, placement et retrait des objets |
+| `decisions.ts` | Arbitrage faim, curiosité, repos, apaisement, valeurs apprises et distance |
 | `world.ts` | Initialisation, commandes d’ajout de nourriture, orchestration à pas fixe |
 | `persistence.ts` | JSON complet et validation structurelle des imports |
 | `src/ui/renderer.ts` | Dessin original et indépendant du hasard biologique |
@@ -55,6 +69,7 @@ Voir [la conception détaillée](docs/architecture.md) pour les équations, comp
 - Sauvegarde automatique locale toutes les 15 secondes et au masquage/à la fermeture de la page. Restauration au prochain lancement, sans faire avancer le temps d’absence.
 - Sauvegarde manuelle, chargement local, export et import JSON depuis l’icône en haut à droite. Les imports invalides conservent le jardin courant.
 - Le JSON conserve le génome, les bolus en cours de digestion, la mémoire, l’action, les échéances de décision et l’état du générateur.
+- Le format actuel est **v2**. Les sauvegardes **v1** sont migrées automatiquement : valeurs biologiques, préférences alimentaires, digestion, action, temps et hasard sont conservés ; les besoins et la mémoire des objets sont ajoutés sans tirage aléatoire. Les v2 conservent aussi les objets, leur récupération et une interaction en cours. La clé locale existante est conservée pour retrouver les jardins déjà sauvegardés.
 - Une même graine **et la même séquence de commandes aux mêmes ticks** reproduisent l’évolution dans le même runtime. Le temps mural, la fréquence d’affichage et l’ouverture du panneau ne modifient pas la simulation.
 - L’onglet masqué et les dialogues suspendent la simulation. Pause et vitesse sont des préférences d’affichage, pas un état biologique sauvegardé.
 - Les fonctions trigonométriques peuvent différer de quelques bits entre moteurs JavaScript : une identité binaire entre moteurs différents n’est pas garantie.
@@ -76,6 +91,6 @@ Sur un système fournissant déjà Chromium : `CHROMIUM_PATH=/usr/bin/chromium n
 
 Il s’agit d’un modèle biologique simplifié : pas encore de reproduction, mutation, réseaux neuronaux, population, microbiome ni sélection sur plusieurs générations. Le génome influence déjà les mécanismes ; il ne code pas des préférences alimentaires. Le cerveau est un système d’apprentissage associatif tabulaire, pas un réseau neuronal. Les aliments sont fixes dans ce monde, mais des compositions modifiées produisent d’autres associations sans modifier le cerveau.
 
-Calcul à 10 Hz, décisions au plus à 0,5 Hz, dessin plafonné à 30 images/s, mises à jour du panneau à 4 Hz, densité de pixels plafonnée à 2 et 48 aliments maximum. La performance sur un appareil Android physique reste à mesurer.
+Calcul à 10 Hz, réévaluation habituelle des décisions toutes les 2 s (avec relance après une action), dessin plafonné à 30 images/s, mises à jour du panneau à 4 Hz, densité de pixels plafonnée à 2, 48 aliments et 12 objets maximum. La performance sur un appareil Android physique reste à mesurer.
 
 Tous les dessins sont procéduraux et originaux. Aucun personnage, graphisme, son ou contenu de Creatures n’est utilisé. Les polices Google sont facultatives : la mise en page dispose de polices système de secours. Aucune télémétrie.

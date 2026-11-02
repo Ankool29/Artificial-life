@@ -10,6 +10,12 @@ flowchart LR
   P --> D[Décision]
   B[Mémoire associative] --> D
   M -->|faim| D
+  N[Stimulation / fatigue / stress] --> D
+  O[Objets perçus] --> D
+  D --> I[Interaction physique]
+  I --> N
+  I --> OB[Mémoire des conséquences]
+  OB --> D
   D --> A[Déplacement / ingestion]
   A --> W
   A --> M
@@ -59,16 +65,16 @@ Si faim > 0,18 et contenu digestif < 25, les aliments visibles concourent selon 
 
 Le meilleur score positif est choisi. Avec une probabilité génétique de 0,12, Milo explore un aliment visible choisi uniformément. Sans choix alimentaire, il peut se reposer ou marcher vers une destination aléatoire. L’instinct de manger quand la faim monte est inné ; **la valeur d’une catégorie alimentaire ne l’est pas**. Aucun branchement de décision ne dépend de « amber », « blue » ou « rose ».
 
-Les tests échangent la composition d’aliments portant les mêmes signaux et vérifient l’inversion des préférences. Ils vérifient aussi le désapprentissage lorsque les effets d’un signal changent.
+Les tests échangent la composition d’aliments portant les mêmes signaux et vérifient l’inversion des préférences. Ils vérifient aussi le désapprentissage lorsque les effets d’un signal changent. À l’étape 2, ce choix alimentaire est conservé comme candidat dans un arbitrage de motivations ; voir [curiosité et objets](curiosity.md).
 
 ## Horloge et budget mobile
 
 Un tick dure 100 ms. Un accumulateur convertit le temps de rendu en ticks entiers. Les pauses ne modifient pas l’état. Un frame très tardif est limité à 250 ms pour éviter une avalanche de rattrapage ; ce choix ralentit le temps simulé lors d’un gel prolongé, mais ne change pas le résultat d’une séquence de ticks.
 
-Avec une créature et au maximum 48 aliments, un parcours linéaire de perception est plus simple et suffisant. Ne pas introduire d’arbre spatial sans mesure. Pour une population, déplacer les ticks vers un Worker et introduire une grille spatiale avant d’augmenter la fréquence de décision. Le dessin et les informations facultatives peuvent conserver un instantané indépendant.
+Avec une créature, au maximum 48 aliments et 12 objets, un parcours linéaire de perception est plus simple et suffisant. Ne pas introduire d’arbre spatial sans mesure. Pour une population, déplacer les ticks vers un Worker et introduire une grille spatiale avant d’augmenter la fréquence de décision. Le dessin et les informations facultatives peuvent conserver un instantané indépendant.
 
 ## Sauvegardes et évolution
 
-Le format JSON v1 contient uniquement des données. L’import borne la taille et le nombre d’objets, vérifie valeurs finies, plages, références, identifiants uniques et cohérence du volume digestif. Il ne déclenche pas de code. Les versions inconnues sont rejetées ; un module explicite de migration sera nécessaire pour les versions futures.
+Le format JSON v2 contient uniquement des données. L’import borne la taille et le nombre d’objets, vérifie valeurs finies, plages, références, identifiants uniques et cohérence du volume digestif. Les sauvegardes v1 sont d’abord validées avec leurs contraintes d’origine puis migrées sans modifier leurs champs biologiques, leur mémoire alimentaire ou leur générateur aléatoire. Les objets, besoins et traces d’interaction v2 sont validés séparément. Les versions inconnues sont rejetées. Un ancien moteur v1 ne sait pas relire les nouveaux exports v2.
 
 Les prochaines extensions proposées sont : séparation des gènes et du phénotype recalculé ; récepteurs et signaux plus riches ; métabolites à cinétique propre ; boucles de récompense fondées sur des neuromodulateurs ; reproduction et hérédité ; comparaison de plusieurs graines et générations. Chacune doit maintenir les tests de replay et de reprise exacte.

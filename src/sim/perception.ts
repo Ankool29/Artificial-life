@@ -1,4 +1,10 @@
-import type { Creature, Food, Observation } from "./types";
+import type {
+  Creature,
+  Food,
+  Observation,
+  ObjectObservation,
+  World,
+} from "./types";
 
 // Deliberately excludes nutrients/toxins: the decision system cannot cheat.
 export function perceive(
@@ -19,4 +25,23 @@ export function perceive(
       });
   }
   return observations;
+}
+
+export function perceiveObjects(world: World): ObjectObservation[] {
+  const c = world.creature;
+  return world.objects.flatMap((object) => {
+    const distance = Math.hypot(object.x - c.x, object.y - c.y);
+    return distance <= c.genome.genes.vision && object.availableAt <= world.tick
+      ? [
+          {
+            id: object.id,
+            cue: object.cue,
+            x: object.x,
+            y: object.y,
+            distance,
+            unknown: c.objectBrain[object.cue].interactions === 0,
+          },
+        ]
+      : [];
+  });
 }

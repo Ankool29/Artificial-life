@@ -1,4 +1,5 @@
-import { CUES, MAX_FOODS, type World } from "./types";
+import { CUES, MAX_FOODS, MAX_OBJECTS, OBJECT_CUES, type World } from "./types";
+import { createNeeds, createObjectBrain, INTERACTION_TICKS } from "./curiosity";
 
 const MAX_SAVE_BYTES = 100_000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -33,7 +34,7 @@ export function deserialize(json: string): World {
   }
   if (
     !isObject(w) ||
-    w.version !== 1 ||
+    (w.version !== 1 && w.version !== 2) ||
     typeof w.seed !== "string" ||
     w.seed.length > 80 ||
     !integer(w.rng, 0, 0xffffffff) ||
@@ -45,6 +46,7 @@ export function deserialize(json: string): World {
     return invalid();
   const nextId = w.nextId;
   const tick = w.tick;
+  const legacy = w.version === 1;
   if (
     !Array.isArray(w.foods) ||
     w.foods.length > MAX_FOODS ||
@@ -134,7 +136,14 @@ export function deserialize(json: string): World {
     !(
       a.kind === "rest" ||
       (a.kind === "wander" && point(a.target, 600, 680)) ||
-      (a.kind === "seek" && integer(a.foodId, 1, w.nextId - 1))
+      (a.kind === "seek" && integer(a.foodId, 1, w.nextId - 1)) ||
+      (!legacy && a.kind === "inspect" && integer(a.objectId, 1, nextId - 1)) ||
+      (!legacy &&
+        a.kind === "interact" &&
+        integer(a.objectId, 1, nextId - 1) &&
+        OBJECT_CUES.includes(a.cue as (typeof OBJECT_CUES)[number]) &&
+        integer(a.remaining, 1, INTERACTION_TICKS) &&
+        validEffects(a.changes))
     )
   )
     return invalid();
@@ -145,11 +154,77 @@ export function deserialize(json: string): World {
       (e) =>
         isObject(e) &&
         integer(e.tick, 0, tick) &&
-        ["meal", "learn", "death"].includes(e.kind as string) &&
-        (e.kind === "death" || cue(e.cue)) &&
-        (e.kind !== "learn" || number(e.value, -2, 2)),
+        ((["meal", "learn", "death"].includes(e.kind as string) &&
+          (e.kind === "death" || cue(e.cue)) &&
+          (e.kind !== "learn" || number(e.value, -2, 2))) ||
+          (!legacy &&
+            e.kind === "interaction" &&
+            OBJECT_CUES.includes(e.objectCue as (typeof OBJECT_CUES)[number]) &&
+            number(e.value, -2, 2))),
     )
   )
     return invalid();
+  if (legacy) {
+    // No new random draws; retain every old biological value and action.
+    w.version = 2;
+    w.objects = [];
+    c.needs = createNeeds();
+    c.objectBrain = createObjectBrain();
+  } else {
+    if (
+      !isObject(c.needs) ||
+      !["stimulation", "fatigue", "stress"].every((key) =>
+        number((c.needs as Record<string, unknown>)[key], 0, 100),
+      )
+    )
+      return invalid();
+    const memories = c.objectBrain;
+    if (
+      !isObject(memories) ||
+      !OBJECT_CUES.every((key) => {
+        const memory = memories[key];
+        return (
+          isObject(memory) &&
+          number(memory.value, -2, 2) &&
+          number(memory.lastReward, -2, 2) &&
+          integer(memory.interactions, 0, 1e10) &&
+          validEffects(memory.expected)
+        );
+      })
+    )
+      return invalid();
+    if (
+      !Array.isArray(w.objects) ||
+      w.objects.length > MAX_OBJECTS ||
+      !w.objects.every(
+        (object) =>
+          isObject(object) &&
+          point(object, 600, 680) &&
+          integer(object.id, 1, nextId - 1) &&
+          OBJECT_CUES.includes(object.cue as (typeof OBJECT_CUES)[number]) &&
+          integer(object.availableAt, 0, 1e10) &&
+          validEffects(object.effects),
+      )
+    )
+      return invalid();
+    const ids = [
+      ...w.foods.map((food) => food.id),
+      ...w.objects.map((object) => object.id),
+    ];
+    if (new Set(ids).size !== ids.length) return invalid();
+    if (a.kind === "interact") {
+      const target = w.objects.find((object) => object.id === a.objectId);
+      if (target && target.cue !== a.cue) return invalid();
+    }
+  }
   return w as unknown as World;
+}
+
+function validEffects(value: unknown): boolean {
+  return (
+    isObject(value) &&
+    ["stimulation", "fatigue", "stress", "energy"].every((key) =>
+      number(value[key], -100, 100),
+    )
+  );
 }
