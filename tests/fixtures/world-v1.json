@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "seed": "legacy-curiosity",
+  "rng": 1433797074,
+  "tick": 315,
+  "nextId": 13,
+  "width": 600,
+  "height": 680,
+  "foods": [
+    {
+      "id": 1,
+      "cue": "amber",
+      "x": 467.57917559240013,
+      "y": 340,
+      "nutrients": 28,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 2,
+      "cue": "blue",
+      "x": 434.6068157954129,
+      "y": 417.71528133424,
+      "nutrients": 15,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 3,
+      "cue": "rose",
+      "x": 373.4359929175116,
+      "y": 467.19487083739835,
+      "nutrients": 5,
+      "toxins": 10,
+      "mass": 10
+    },
+    {
+      "id": 4,
+      "cue": "amber",
+      "x": 300,
+      "y": 481.00579392630607,
+      "nutrients": 28,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 5,
+      "cue": "blue",
+      "x": 200.97357843071228,
+      "y": 511.518793449741,
+      "nutrients": 15,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 6,
+      "cue": "rose",
+      "x": 171.62225954951236,
+      "y": 414.11892300704494,
+      "nutrients": 5,
+      "toxins": 10,
+      "mass": 10
+    },
+    {
+      "id": 8,
+      "cue": "blue",
+      "x": 127.88500505923645,
+      "y": 240.62936133937916,
+      "nutrients": 15,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 11,
+      "cue": "blue",
+      "x": 382.08638028707355,
+      "y": 197.8222187333683,
+      "nutrients": 15,
+      "toxins": 0,
+      "mass": 10
+    },
+    {
+      "id": 12,
+      "cue": "rose",
+      "x": 413.905889315502,
+      "y": 274.2364041414111,
+      "nutrients": 5,
+      "toxins": 10,
+      "mass": 10
+    }
+  ],
+  "events": [
+    {
+      "tick": 33,
+      "kind": "meal",
+      "cue": "amber"
+    },
+    {
+      "tick": 63,
+      "kind": "meal",
+      "cue": "rose"
+    },
+    {
+      "tick": 86,
+      "kind": "learn",
+      "cue": "amber",
+      "value": 1.1013027956858317
+    },
+    {
+      "tick": 116,
+      "kind": "learn",
+      "cue": "rose",
+      "value": -1.0890530721989564
+    },
+    {
+      "tick": 123,
+      "kind": "meal",
+      "cue": "amber"
+    },
+    {
+      "tick": 164,
+      "kind": "learn",
+      "cue": "amber",
+      "value": 0.9053959907988226
+    }
+  ],
+  "creature": {
+    "x": 140.72944835808818,
+    "y": 331.91633227538404,
+    "heading": 1.805423755494882,
+    "genome": {
+      "version": 1,
+      "genes": {
+        "speed": 34.96952685341239,
+        "vision": 190.61801250558347,
+        "efficiency": 0.9833060675766319,
+        "detox": 0.7771255440544338,
+        "learningRate": 0.38692414039745926,
+        "exploration": 0.12
+      }
+    },
+    "metabolism": {
+      "energy": 100,
+      "stomach": 6.399999999999997,
+      "toxins": 0,
+      "health": 84.09300000000091,
+      "gut": [
+        {
+          "cue": "blue",
+          "remaining": 6.399999999999997,
+          "nutrients": 9.600000000000005,
+          "toxins": 0,
+          "reward": 0.19327999999997872
+        }
+      ]
+    },
+    "brain": {
+      "amber": {
+        "value": 0.6115638416121687,
+        "meals": 2,
+        "lastReward": 0.9053959907988226
+      },
+      "blue": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "rose": {
+        "value": -0.42138092380779335,
+        "meals": 1,
+        "lastReward": -1.0890530721989564
+      }
+    },
+    "action": {
+      "kind": "rest"
+    },
+    "nextDecision": 333,
+    "meals": 3,
+    "alive": true
+  }
+}

@@ -2,7 +2,17 @@ import { createBrain, reinforce } from "./brain";
 import { decide } from "./decisions";
 import { createGenome } from "./genome";
 import { ingest, metabolize } from "./metabolism";
-import { perceive } from "./perception";
+import { perceive, perceiveObjects } from "./perception";
+import {
+  applyObjectEffects,
+  createNeeds,
+  createObjectBrain,
+  INTERACTION_TICKS,
+  learnInteraction,
+  OBJECT_COOLDOWN,
+  updateNeeds,
+  zeroEffects,
+} from "./curiosity";
 import { hashSeed, random } from "./random";
 import {
   clamp,
@@ -10,7 +20,6 @@ import {
   DT,
   MAX_FOODS,
   type Cue,
-  type Food,
   type World,
   type WorldEvent,
 } from "./types";
@@ -45,7 +54,7 @@ export function createWorld(seed = "luma-01"): World {
   const source = { rng: hashSeed(seed) };
   const genome = createGenome(source);
   const world: World = {
-    version: 1,
+    version: 2,
     seed,
     rng: source.rng,
     tick: 0,
@@ -53,6 +62,7 @@ export function createWorld(seed = "luma-01"): World {
     width: 600,
     height: 680,
     foods: [],
+    objects: [],
     events: [],
     creature: {
       x: 300,
@@ -61,6 +71,8 @@ export function createWorld(seed = "luma-01"): World {
       genome,
       metabolism: { energy: 52, stomach: 0, toxins: 0, health: 100, gut: [] },
       brain: createBrain(),
+      needs: createNeeds(),
+      objectBrain: createObjectBrain(),
       action: { kind: "rest" },
       nextDecision: 0,
       meals: 0,
@@ -90,15 +102,24 @@ export function step(world: World): void {
   const c = world.creature;
   if (!c.alive) return;
   world.tick++;
-  if (world.tick >= c.nextDecision) {
-    c.action = decide(world, perceive(c, world.foods));
+  if (world.tick >= c.nextDecision && c.action.kind !== "interact") {
+    c.action = decide(world, perceive(c, world.foods), perceiveObjects(world));
     c.nextDecision = world.tick + 20;
   }
-  let target: Food | { x: number; y: number } | undefined;
+  let target: { x: number; y: number } | undefined;
   if (c.action.kind === "seek") {
     const id = c.action.foodId;
     target = world.foods.find((food) => food.id === id);
     if (!target) c.nextDecision = world.tick;
+  } else if (c.action.kind === "inspect") {
+    const id = c.action.objectId;
+    target = world.objects.find(
+      (object) => object.id === id && object.availableAt <= world.tick,
+    );
+    if (!target) {
+      c.action = { kind: "rest" };
+      c.nextDecision = world.tick;
+    }
   } else if (c.action.kind === "wander") target = c.action.target;
   let moving = false;
   if (target) {
@@ -112,13 +133,29 @@ export function step(world: World): void {
       c.y += (dy / distance) * stride;
       c.heading = Math.atan2(dy, dx);
     } else {
-      if ("id" in target && ingest(c.metabolism, target)) {
-        world.foods = world.foods.filter((food) => food.id !== target.id);
-        c.meals++;
-        event(world, { kind: "meal", cue: target.cue });
+      if (c.action.kind === "seek") {
+        const id = c.action.foodId;
+        const food = world.foods.find((item) => item.id === id);
+        if (food && ingest(c.metabolism, food)) {
+          world.foods = world.foods.filter((item) => item.id !== id);
+          c.meals++;
+          event(world, { kind: "meal", cue: food.cue });
+        }
       }
-      c.action = { kind: "rest" };
-      c.nextDecision = world.tick + 10;
+      if (c.action.kind === "inspect") {
+        const id = c.action.objectId;
+        const object = world.objects.find((item) => item.id === id)!;
+        c.action = {
+          kind: "interact",
+          objectId: id,
+          cue: object.cue,
+          remaining: INTERACTION_TICKS,
+          changes: zeroEffects(),
+        };
+      } else {
+        c.action = { kind: "rest" };
+        c.nextDecision = world.tick + 10;
+      }
     }
   }
   for (const outcome of metabolize(c.metabolism, c.genome, moving)) {
@@ -129,6 +166,28 @@ export function step(world: World): void {
       c.genome.genes.learningRate,
     );
     event(world, { kind: "learn", cue: outcome.cue, value: outcome.reward });
+  }
+  updateNeeds(c, moving);
+  if (c.action.kind === "interact") {
+    const action = c.action;
+    const object = world.objects.find((item) => item.id === action.objectId);
+    if (object) {
+      applyObjectEffects(c, object, action.changes);
+      action.remaining--;
+    }
+    if (!object || action.remaining <= 0 || c.metabolism.health <= 0) {
+      if (action.remaining < INTERACTION_TICKS) {
+        const reward = learnInteraction(c, action.cue, action.changes);
+        event(world, {
+          kind: "interaction",
+          objectCue: action.cue,
+          value: reward,
+        });
+      }
+      if (object) object.availableAt = world.tick + OBJECT_COOLDOWN;
+      c.action = { kind: "rest" };
+      c.nextDecision = world.tick + 10;
+    }
   }
   if (c.metabolism.health <= 0) {
     c.alive = false;

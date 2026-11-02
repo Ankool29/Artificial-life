@@ -222,7 +222,7 @@ describe("saves and stability", () => {
       "{}",
       "null",
       "x".repeat(100001),
-      JSON.stringify({ ...createWorld(), version: 2 }),
+      JSON.stringify({ ...createWorld(), version: 999 }),
     ])
       expect(() => deserialize(input)).toThrow();
   });
