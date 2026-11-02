@@ -1,0 +1,65 @@
+import {
+  clamp,
+  DT,
+  type Cue,
+  type Food,
+  type Genome,
+  type Metabolism,
+} from "./types";
+
+export function hunger(m: Metabolism): number {
+  return clamp(1 - m.energy / 100) * (1 - 0.7 * clamp(m.stomach / 36));
+}
+export function ingest(m: Metabolism, food: Food): boolean {
+  if (m.stomach + food.mass > 36) return false;
+  m.gut.push({
+    cue: food.cue,
+    remaining: food.mass,
+    nutrients: food.nutrients,
+    toxins: food.toxins,
+    reward: 0,
+  });
+  m.stomach += food.mass;
+  return true;
+}
+export interface Outcome {
+  cue: Cue;
+  reward: number;
+}
+
+export function metabolize(
+  m: Metabolism,
+  genome: Genome,
+  moving: boolean,
+): Outcome[] {
+  const outcomes: Outcome[] = [];
+  m.energy = clamp(m.energy - (0.32 + (moving ? 0.18 : 0)) * DT, 0, 100);
+  // Finite enzyme throughput shared across the gut; each meal takes several seconds.
+  const throughput = (2.4 * DT) / Math.max(1, m.gut.length);
+  for (const bolus of m.gut) {
+    const amount = Math.min(throughput, bolus.remaining);
+    const fraction = amount / bolus.remaining;
+    const nutrients = bolus.nutrients * fraction;
+    const absorbedToxin = bolus.toxins * fraction;
+    const previousEnergy = m.energy;
+    const previousHealth = m.health;
+    m.energy = clamp(m.energy + nutrients * genome.genes.efficiency, 0, 100);
+    m.toxins = clamp(m.toxins + absorbedToxin, 0, 100);
+    m.health = clamp(m.health - absorbedToxin * 1.8, 0, 100);
+    // Reinforcement from actual internal changes, never from a food's category.
+    bolus.reward +=
+      (m.energy - previousEnergy) / 25 + (m.health - previousHealth) / 14;
+    bolus.nutrients = Math.max(0, bolus.nutrients - nutrients);
+    bolus.toxins = Math.max(0, bolus.toxins - absorbedToxin);
+    bolus.remaining = Math.max(0, bolus.remaining - amount);
+    if (bolus.remaining < 1e-8)
+      outcomes.push({ cue: bolus.cue, reward: clamp(bolus.reward, -2, 2) });
+  }
+  m.gut = m.gut.filter((bolus) => bolus.remaining >= 1e-8);
+  m.stomach = m.gut.reduce((sum, bolus) => sum + bolus.remaining, 0);
+  m.toxins = Math.max(0, m.toxins - genome.genes.detox * DT);
+  if (m.energy < 1) m.health = Math.max(0, m.health - 1.6 * DT);
+  if (m.energy > 35 && m.toxins < 1)
+    m.health = Math.min(100, m.health + 0.13 * DT);
+  return outcomes;
+}
