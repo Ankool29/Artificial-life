@@ -1,4 +1,5 @@
-import type { Cue, Point, World } from "../sim/types";
+import type { Cue, InteractiveObject, Point, World } from "../sim/types";
+import { OBJECT_COLORS } from "./object-info";
 
 export const COLORS: Record<Cue, string> = {
   amber: "#efc45f",
@@ -119,9 +120,91 @@ export class Renderer {
           ctx.stroke();
         }
       }
+      if (c.action.kind === "inspect" || c.action.kind === "interact") {
+        const id = c.action.objectId;
+        const target = world.objects.find((object) => object.id === id);
+        if (target) {
+          ctx.strokeStyle = "#7e638d99";
+          ctx.beginPath();
+          ctx.moveTo(c.x, c.y);
+          ctx.lineTo(target.x, target.y);
+          ctx.stroke();
+        }
+      }
+    }
+    for (const object of world.objects) {
+      const active =
+        c.action.kind === "interact" && c.action.objectId === object.id;
+      this.object(object, active, object.availableAt > world.tick);
     }
     for (const food of world.foods) this.food(food.x, food.y, food.cue);
     this.creature(world);
+  }
+
+  private object(
+    object: InteractiveObject,
+    active: boolean,
+    cooling: boolean,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(object.x, object.y);
+    ctx.fillStyle = "#344c3825";
+    this.ellipse(0, 17, 23, 7);
+    ctx.globalAlpha = cooling ? 0.6 : 1;
+    ctx.fillStyle = OBJECT_COLORS[object.cue];
+    ctx.strokeStyle = "#607457";
+    ctx.lineWidth = 2;
+    if (object.cue === "moss") {
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 23, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#c8dba7";
+      for (let i = 0; i < 5; i++)
+        this.ellipse(-14 + i * 7, (i % 2) * 6 - 4, 3, 3);
+    } else if (object.cue === "prism") {
+      ctx.beginPath();
+      ctx.moveTo(0, -25);
+      ctx.lineTo(19, 1);
+      ctx.lineTo(10, 18);
+      ctx.lineTo(-13, 14);
+      ctx.lineTo(-19, -4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "#f5ebf4";
+      ctx.beginPath();
+      ctx.moveTo(0, -25);
+      ctx.lineTo(-3, 0);
+      ctx.lineTo(19, 1);
+      ctx.moveTo(-3, 0);
+      ctx.lineTo(10, 18);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(-19, 15);
+      ctx.lineTo(-15, -24);
+      ctx.quadraticCurveTo(0, -32, 15, -24);
+      ctx.lineTo(19, 15);
+      ctx.stroke();
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 9, -24);
+        ctx.lineTo(i * 9, i === 0 ? 7 : -1);
+        ctx.stroke();
+        this.ellipse(i * 9, i === 0 ? 9 : 1, 4, 7);
+      }
+    }
+    if (active) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#f7f6e9";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   private ellipse(
