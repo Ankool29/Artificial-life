@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Ouvrir l’adresse affichée par Vite. Pour jouer sur Android depuis le même réseau Wi-Fi, ouvrir `http://<IP-de-votre-ordinateur>:5173` sur le téléphone ; autoriser le port dans le pare-feu local si nécessaire. Pour un hébergement statique, `npm run build` produit `dist/`, compatible avec un sous-chemin. Aucun serveur applicatif ni compte nécessaire.
+Ouvrir l’adresse affichée par Vite. Pour jouer sur Android depuis le même réseau Wi-Fi, ouvrir `http://<IP-de-votre-ordinateur>:5173` sur le téléphone ; autoriser le port dans le pare-feu local si nécessaire. Pour GitHub Pages, `npm run build` produit `dist/` avec le préfixe `/Artificial-life/`. Aucun serveur applicatif ni compte nécessaire.
 
 1. Choisir un aliment puis toucher le jardin pour le déposer. « Semer un trio » en ajoute trois avec des positions reproductibles.
 2. Observer Milo choisir, se déplacer et manger. Il n’obéit pas au doigt ; vous entretenez son environnement.
@@ -21,6 +21,14 @@ Ouvrir l’adresse affichée par Vite. Pour jouer sur Android depuis le même r�
 4. Maintenir une alimentation suffisante ; les toxines et la famine peuvent conduire à la mort. Le menu sauvegarde permet de faire éclore une nouvelle vie.
 
 Au départ, tous les aliments sont inconnus. Dans ce premier monde, le grain solaire est nourrissant, la perle de rosée moins énergétique et la baie corail toxique. **Le cerveau ne dispose pas de cette information.** Il continue d’explorer occasionnellement même après un apprentissage négatif.
+
+## Déploiement sur GitHub Pages
+
+Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
+
+Un administrateur du dépôt doit sélectionner **Settings → Pages → Build and deployment → Source : GitHub Actions**. Aucune branche `gh-pages`, aucun jeton personnel ni secret supplémentaire n’est nécessaire. Le workflow CI existant reste indépendant et inchangé.
+
+Voir [les instructions complètes](docs/github-pages.md) pour le premier déploiement, une relance manuelle et la vérification des chemins de production.
 
 ## Architecture
 
