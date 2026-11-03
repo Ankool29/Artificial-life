@@ -1,5 +1,6 @@
 import type { Cue, InteractiveObject, Point, World } from "../sim/types";
 import { OBJECT_COLORS } from "./object-info";
+import type { Device } from "../sim/instrumental-types";
 
 export const COLORS: Record<Cue, string> = {
   amber: "#efc45f",
@@ -137,8 +138,41 @@ export class Renderer {
         c.action.kind === "interact" && c.action.objectId === object.id;
       this.object(object, active, object.availableAt > world.tick);
     }
+    for (const device of world.instrumental?.devices ?? [])
+      this.device(device, world.tick);
     for (const food of world.foods) this.food(food.x, food.y, food.cue);
     this.creature(world, name);
+  }
+
+  private device(d: Device, tick: number): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.fillStyle = "#344c3825";
+    this.ellipse(1, 23, 30, 9);
+    ctx.fillStyle = "#b9c7a1";
+    ctx.strokeStyle = "#42644c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-23, -34, 46, 55, 9);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#e9e9cb";
+    ctx.fillRect(-15, -26, 30, 23);
+    ctx.fillStyle = d.stock ? COLORS[d.recipe.cue] : "#acb79c";
+    for (let i = 0; i < Math.min(3, d.stock); i++)
+      this.ellipse(-8 + i * 8, -15, 4, 5);
+    ctx.fillStyle = "#405943";
+    ctx.fillRect(-10, 6, 20, 10);
+    ctx.strokeStyle = "#6b7552";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(23, -4);
+    ctx.lineTo(35, tick < d.pressedUntil ? 10 : -18);
+    ctx.stroke();
+    ctx.fillStyle = "#d1ac67";
+    this.ellipse(35, tick < d.pressedUntil ? 10 : -18, 6, 6);
+    ctx.restore();
   }
 
   private object(

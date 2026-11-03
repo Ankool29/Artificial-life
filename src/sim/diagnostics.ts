@@ -11,6 +11,11 @@ import type {
   ObjectCue,
   Creature,
 } from "./types";
+import type {
+  ActuatorObservation,
+  InstrumentalTrace,
+  Situation,
+} from "./instrumental-types";
 
 // Diagnostic payloads only: never part of World, genomes or saved profiles.
 export interface BodyState extends Needs {
@@ -32,6 +37,13 @@ export interface CandidateScore {
   score: number;
   association?: { cue: Cue | ObjectCue; value: number; experiences: number };
   predictedEffects?: ObjectEffects;
+  instrumental?: {
+    targetId: number;
+    situation: Situation;
+    probability: number;
+    value: number;
+    attempts: number;
+  };
 }
 export interface DecisionTrace {
   tick: number;
@@ -46,6 +58,7 @@ export interface DecisionTrace {
   };
   foods: Observation[];
   objects: ObjectObservation[];
+  actuators?: ActuatorObservation[];
   candidates: CandidateScore[];
   foodPolicy: "ineligible" | "exploration" | "scored";
   branch: "urgent-food" | "best-score" | "rest-gate" | "wander";
@@ -60,6 +73,7 @@ export interface AbsorptionTrace {
   completed: boolean;
 }
 export type DiagnosticEvent = { tick: number } & (
+  | { kind: "instrumental"; trace: InstrumentalTrace }
   | { kind: "decision"; trace: DecisionTrace }
   | { kind: "ingestion"; food: Food }
   | { kind: "absorption"; trace: AbsorptionTrace }

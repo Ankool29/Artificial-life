@@ -2,6 +2,8 @@ import { hunger } from "./metabolism";
 import { random } from "./random";
 import { motivations } from "./curiosity";
 import type { DecisionTrace } from "./diagnostics";
+import { actuatorScores } from "./instrumental";
+import type { ActuatorObservation } from "./instrumental-types";
 import {
   clamp,
   type Action,
@@ -64,6 +66,7 @@ export function decide(
   seen: readonly Observation[],
   objects: readonly ObjectObservation[] = [],
   observe?: (trace: DecisionTrace) => void,
+  actuators: readonly ActuatorObservation[] = [],
 ): Action {
   const c = world.creature;
   const drives = motivations(c);
@@ -76,6 +79,9 @@ export function decide(
         motivations: { ...drives },
         foods: seen.map((item) => ({ ...item })),
         objects: objects.map((item) => ({ ...item })),
+        ...(actuators.length
+          ? { actuators: actuators.map((item) => ({ ...item })) }
+          : {}),
         candidates: [],
         foodPolicy: "ineligible",
         branch: "best-score",
@@ -151,6 +157,30 @@ export function decide(
     if (score > bestScore) {
       bestScore = score;
       best = { kind: "inspect", objectId: object.id };
+    }
+  }
+  for (const candidate of actuatorScores(
+    world,
+    actuators,
+    seen,
+    drives.curiosity,
+  )) {
+    const action: Action = { kind: "use", targetId: candidate.target.id };
+    trace?.candidates.push({
+      stage: "arbitration",
+      action,
+      score: candidate.score,
+      instrumental: {
+        targetId: candidate.target.id,
+        situation: candidate.situation,
+        probability: candidate.probability,
+        value: candidate.value,
+        attempts: candidate.attempts,
+      },
+    });
+    if (candidate.score > bestScore) {
+      bestScore = candidate.score;
+      best = action;
     }
   }
   if (best.kind !== "rest") return finish(best, "best-score");

@@ -1,3 +1,4 @@
+import type { InstrumentalState } from "./instrumental-types";
 export type Cue = "amber" | "blue" | "rose";
 export const CUES: readonly Cue[] = ["amber", "blue", "rose"];
 export interface Point {
@@ -88,6 +89,7 @@ export type Action =
   | { kind: "wander"; target: Point }
   | { kind: "seek"; foodId: number }
   | { kind: "inspect"; objectId: number }
+  | { kind: "use"; targetId: number }
   | {
       kind: "interact";
       objectId: number;
@@ -127,6 +129,7 @@ export interface World {
   foods: Food[];
   objects: InteractiveObject[];
   events: WorldEvent[];
+  instrumental?: InstrumentalState;
 }
 export interface Observation {
   id: number;

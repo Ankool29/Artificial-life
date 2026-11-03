@@ -4,6 +4,8 @@ import { hashSeed } from "../sim/random";
 import { createWorld, advance } from "../sim/world";
 import type { Food, Genome, InteractiveObject, World } from "../sim/types";
 import type { SimulationObserver } from "../sim/diagnostics";
+import type { Device } from "../sim/instrumental-types";
+import { createInstrumentalState } from "../sim/devices";
 
 export const MAX_PROFILES = 8;
 export const MAX_LAB_BYTES = 1_500_000;
@@ -15,6 +17,7 @@ export interface EnvironmentSnapshot {
   nextId: number;
   foods: Food[];
   objects: InteractiveObject[];
+  devices?: Device[];
 }
 export interface IndividualProfile {
   id: string;
@@ -129,6 +132,16 @@ export function captureEnvironment(world: World): EnvironmentSnapshot {
       ...structuredClone(object),
       availableAt: 0,
     })),
+    ...(world.instrumental
+      ? {
+          devices: world.instrumental.devices.map((d) => ({
+            ...structuredClone(d),
+            readyAt: 0,
+            pressedUntil: 0,
+            pendingAt: null,
+          })),
+        }
+      : {}),
   };
   return {
     ...payload,
@@ -144,6 +157,10 @@ export function trialWorld(
   world.nextId = environment.nextId;
   world.foods = structuredClone(environment.foods);
   world.objects = structuredClone(environment.objects);
+  if (environment.devices) {
+    world.instrumental = createInstrumentalState(world);
+    world.instrumental.devices = structuredClone(environment.devices);
+  }
   return world;
 }
 export function createTrial(
@@ -199,10 +216,31 @@ function validateEnvironment(value: unknown): EnvironmentSnapshot {
       nextId: value.nextId,
       foods: value.foods,
       objects: value.objects,
+      ...(value.devices !== undefined
+        ? {
+            instrumental: {
+              version: 1,
+              learning: true,
+              devices: value.devices,
+              memories: [],
+              episodes: [],
+              links: [],
+              gut: [],
+              seenFoods: [],
+              nextEpisode: 1,
+            },
+          }
+        : {}),
     }),
   );
   if (world.objects.some((object) => object.availableAt !== 0))
     throw new Error("Terrain non normalisé.");
+  if (
+    world.instrumental?.devices.some(
+      (d) => d.readyAt !== 0 || d.pressedUntil !== 0 || d.pendingAt !== null,
+    )
+  )
+    throw new Error("Mécanisme non normalisé.");
   const normalized = captureEnvironment(world);
   if (normalized.id !== value.id)
     throw new Error("Empreinte du terrain invalide.");
