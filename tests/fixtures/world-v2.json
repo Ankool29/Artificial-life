@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "seed": "legacy-v2-lab",
+  "rng": 357383244,
+  "tick": 12,
+  "nextId": 14,
+  "width": 600,
+  "height": 680,
+  "foods": [],
+  "objects": [
+    {
+      "id": 13,
+      "cue": "prism",
+      "x": 300,
+      "y": 340,
+      "effects": {
+        "stimulation": 36,
+        "fatigue": 18,
+        "stress": 28,
+        "energy": -3
+      },
+      "availableAt": 0
+    }
+  ],
+  "events": [],
+  "creature": {
+    "x": 300,
+    "y": 340,
+    "heading": 0,
+    "genome": {
+      "version": 1,
+      "genes": {
+        "speed": 36.58409936539829,
+        "vision": 195.0965889764484,
+        "efficiency": 0.9150835739332251,
+        "detox": 0.658337143715471,
+        "learningRate": 0.3800454399921,
+        "exploration": 0.12
+      }
+    },
+    "metabolism": {
+      "energy": 93.41600000000011,
+      "stomach": 0,
+      "toxins": 0,
+      "health": 100,
+      "gut": []
+    },
+    "brain": {
+      "amber": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "blue": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "rose": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      }
+    },
+    "needs": {
+      "stimulation": 53.96800000000002,
+      "fatigue": 17.344000000000005,
+      "stress": 16.056
+    },
+    "objectBrain": {
+      "chime": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "moss": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "prism": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      }
+    },
+    "action": {
+      "kind": "interact",
+      "objectId": 13,
+      "cue": "prism",
+      "remaining": 18,
+      "changes": {
+        "stimulation": 14.400000000000034,
+        "fatigue": 7.199999999999999,
+        "stress": 11.200000000000003,
+        "energy": -1.1999999999999318
+      }
+    },
+    "nextDecision": 21,
+    "meals": 0,
+    "alive": true
+  }
+}

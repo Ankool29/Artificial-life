@@ -4,17 +4,27 @@ export interface Point {
   x: number;
   y: number;
 }
-export interface Genome {
-  version: 1;
-  genes: {
-    speed: number;
-    vision: number;
-    efficiency: number;
-    detox: number;
-    learningRate: number;
-    exploration: number;
-  };
+export interface BaseGenes {
+  speed: number;
+  vision: number;
+  efficiency: number;
+  detox: number;
+  learningRate: number;
+  exploration: number;
 }
+export interface PhysiologyGenes {
+  metabolicRate: number;
+  digestionRate: number;
+  toxinSensitivity: number;
+  stimulusGain: number;
+  stressSensitivity: number;
+  recoveryRate: number;
+  stimulationDecay: number;
+}
+export type Genome =
+  | { version: 1; genes: BaseGenes }
+  | { version: 2; genes: BaseGenes & PhysiologyGenes };
+export type ModernGenome = Extract<Genome, { version: 2 }>;
 export interface Food extends Point {
   id: number;
   cue: Cue;

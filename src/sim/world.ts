@@ -20,6 +20,7 @@ import {
   DT,
   MAX_FOODS,
   type Cue,
+  type Genome,
   type World,
   type WorldEvent,
 } from "./types";
@@ -50,9 +51,16 @@ export function addFood(world: World, cue: Cue, x: number, y: number): boolean {
   return true;
 }
 
-export function createWorld(seed = "luma-01"): World {
+export function createWorld(
+  seed = "luma-01",
+  individualGenome?: Genome,
+): World {
   const source = { rng: hashSeed(seed) };
-  const genome = createGenome(source);
+  // Retain the old environment RNG sequence even when the genome is supplied.
+  const legacyGenome = createGenome(source);
+  const genome = individualGenome
+    ? structuredClone(individualGenome)
+    : legacyGenome;
   const world: World = {
     version: 2,
     seed,
