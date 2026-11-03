@@ -7,6 +7,7 @@ import {
   type Metabolism,
 } from "./types";
 import { physiology } from "./genome";
+import type { AbsorptionTrace } from "./diagnostics";
 
 export function hunger(m: Metabolism): number {
   return clamp(1 - m.energy / 100) * (1 - 0.7 * clamp(m.stomach / 36));
@@ -32,6 +33,7 @@ export function metabolize(
   m: Metabolism,
   genome: Genome,
   moving: boolean,
+  observe?: (trace: AbsorptionTrace) => void,
 ): Outcome[] {
   const outcomes: Outcome[] = [];
   const traits = physiology(genome);
@@ -45,6 +47,7 @@ export function metabolize(
   // Finite enzyme throughput shared across the gut; each meal takes several seconds.
   const throughput =
     (2.4 * DT * traits.digestionRate) / Math.max(1, m.gut.length);
+  let diagnosticSlot = 0;
   for (const bolus of m.gut) {
     const amount = Math.min(throughput, bolus.remaining);
     const fraction = amount / bolus.remaining;
@@ -65,6 +68,14 @@ export function metabolize(
     bolus.nutrients = Math.max(0, bolus.nutrients - nutrients);
     bolus.toxins = Math.max(0, bolus.toxins - absorbedToxin);
     bolus.remaining = Math.max(0, bolus.remaining - amount);
+    observe?.({
+      slot: diagnosticSlot++,
+      cue: bolus.cue,
+      energy: m.energy - previousEnergy,
+      health: m.health - previousHealth,
+      absorbedToxin,
+      completed: bolus.remaining < 1e-8,
+    });
     if (bolus.remaining < 1e-8)
       outcomes.push({ cue: bolus.cue, reward: clamp(bolus.reward, -2, 2) });
   }

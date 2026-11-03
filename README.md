@@ -46,6 +46,14 @@ La sauvegarde locale et **Exporter le laboratoire** conservent toute la collecti
 
 [Audit des gènes, protocole et compatibilité](docs/laboratory.md) · [Laboratoire sur ordinateur](docs/previews/laboratory-desktop.png) · [Laboratoire sur Android portrait](docs/previews/laboratory-android-portrait.png)
 
+## Étape 3.5 : observatoire de l’apprentissage
+
+**Observatoire de l’apprentissage** ouvre un panneau facultatif : action actuelle, données de la dernière décision, perception et scores effectivement calculés, associations connues ou inconnues, conséquences mesurées, courbes et chronologie filtrable. La capture peut être suspendue ; ses données restent bornées en mémoire et ne sont pas ajoutées aux sauvegardes.
+
+Le laboratoire permet de comparer deux profils, puis d’exécuter sur des copies isolées quatre protocoles reproductibles : préférence, aversion, changement des effets et diversité physiologique. Les originaux restent intacts. L’instrumentation conserve les règles biologiques et cognitives ainsi que le générateur aléatoire.
+
+[Utilisation, contrat de preuve et expériences](docs/learning-observatory.md) · [Étude C3/DS ayant guidé cette étape](docs/research/creatures3-engine-study.md)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -75,6 +83,9 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | `src/main.ts` | Contrôles, boucle d’horloge, interface biologique facultative et stockage |
 | `src/lab/laboratory.ts` | Profils indépendants, monde actif, terrains d’essai et archivage de la collection |
 | `src/ui/laboratory.ts` | Inspection des individus et expériences comparatives sans cohabitation |
+| `diagnostics.ts` | Charges de diagnostic détachées, absentes de l’état sauvegardé |
+| `src/observatory/` | Capture bornée et protocoles sur copies isolées |
+| `src/ui/observatory.ts` | Dernière décision, associations, chronologie et comparaison de deux profils |
 
 Voir [la conception détaillée](docs/architecture.md) pour les équations, compromis et pistes d’évolution.
 

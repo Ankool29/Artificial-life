@@ -9,11 +9,13 @@ import {
   createObjectBrain,
   INTERACTION_TICKS,
   learnInteraction,
+  motivations,
   OBJECT_COOLDOWN,
   updateNeeds,
   zeroEffects,
 } from "./curiosity";
 import { hashSeed, random } from "./random";
+import { bodyState, type SimulationObserver } from "./diagnostics";
 import {
   clamp,
   CUES,
@@ -106,12 +108,19 @@ function event(world: World, data: Omit<WorldEvent, "tick">): void {
 }
 
 // Exactly one 100 ms tick, no clocks, DOM, storage, or Math.random in this module.
-export function step(world: World): void {
+export function step(world: World, observe?: SimulationObserver): void {
   const c = world.creature;
   if (!c.alive) return;
   world.tick++;
   if (world.tick >= c.nextDecision && c.action.kind !== "interact") {
-    c.action = decide(world, perceive(c, world.foods), perceiveObjects(world));
+    c.action = decide(
+      world,
+      perceive(c, world.foods),
+      perceiveObjects(world),
+      observe
+        ? (trace) => observe({ kind: "decision", tick: world.tick, trace })
+        : undefined,
+    );
     c.nextDecision = world.tick + 20;
   }
   let target: { x: number; y: number } | undefined;
@@ -148,6 +157,7 @@ export function step(world: World): void {
           world.foods = world.foods.filter((item) => item.id !== id);
           c.meals++;
           event(world, { kind: "meal", cue: food.cue });
+          observe?.({ kind: "ingestion", tick: world.tick, food: { ...food } });
         }
       }
       if (c.action.kind === "inspect") {
@@ -160,13 +170,27 @@ export function step(world: World): void {
           remaining: INTERACTION_TICKS,
           changes: zeroEffects(),
         };
+        observe?.({
+          kind: "interaction-start",
+          tick: world.tick,
+          objectId: id,
+          cue: object.cue,
+        });
       } else {
         c.action = { kind: "rest" };
         c.nextDecision = world.tick + 10;
       }
     }
   }
-  for (const outcome of metabolize(c.metabolism, c.genome, moving)) {
+  for (const outcome of metabolize(
+    c.metabolism,
+    c.genome,
+    moving,
+    observe
+      ? (trace) => observe({ kind: "absorption", tick: world.tick, trace })
+      : undefined,
+  )) {
+    const before = observe ? { ...c.brain[outcome.cue] } : undefined;
     reinforce(
       c.brain,
       outcome.cue,
@@ -174,6 +198,16 @@ export function step(world: World): void {
       c.genome.genes.learningRate,
     );
     event(world, { kind: "learn", cue: outcome.cue, value: outcome.reward });
+    if (observe && before)
+      observe({
+        kind: "food-learning",
+        tick: world.tick,
+        cue: outcome.cue,
+        before,
+        after: { ...c.brain[outcome.cue] },
+        reward: outcome.reward,
+        rate: c.genome.genes.learningRate,
+      });
   }
   updateNeeds(c, moving);
   if (c.action.kind === "interact") {
@@ -185,12 +219,27 @@ export function step(world: World): void {
     }
     if (!object || action.remaining <= 0 || c.metabolism.health <= 0) {
       if (action.remaining < INTERACTION_TICKS) {
+        const before = observe
+          ? structuredClone(c.objectBrain[action.cue])
+          : undefined;
         const reward = learnInteraction(c, action.cue, action.changes);
         event(world, {
           kind: "interaction",
           objectCue: action.cue,
           value: reward,
         });
+        if (observe && before)
+          observe({
+            kind: "object-learning",
+            tick: world.tick,
+            objectId: action.objectId,
+            cue: action.cue,
+            changes: { ...action.changes },
+            before,
+            after: structuredClone(c.objectBrain[action.cue]),
+            reward,
+            rate: c.genome.genes.learningRate,
+          });
       }
       if (object) object.availableAt = world.tick + OBJECT_COOLDOWN;
       c.action = { kind: "rest" };
@@ -202,8 +251,20 @@ export function step(world: World): void {
     c.action = { kind: "rest" };
     event(world, { kind: "death" });
   }
+  observe?.({
+    kind: "state",
+    tick: world.tick,
+    body: bodyState(c),
+    drives: motivations(c),
+    action: structuredClone(c.action),
+    alive: c.alive,
+  });
 }
 
-export function advance(world: World, ticks: number): void {
-  for (let i = 0; i < ticks; i++) step(world);
+export function advance(
+  world: World,
+  ticks: number,
+  observe?: SimulationObserver,
+): void {
+  for (let i = 0; i < ticks; i++) step(world, observe);
 }

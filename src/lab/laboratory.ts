@@ -3,6 +3,7 @@ import { deserialize } from "../sim/persistence";
 import { hashSeed } from "../sim/random";
 import { createWorld, advance } from "../sim/world";
 import type { Food, Genome, InteractiveObject, World } from "../sim/types";
+import type { SimulationObserver } from "../sim/diagnostics";
 
 export const MAX_PROFILES = 8;
 export const MAX_LAB_BYTES = 1_500_000;
@@ -163,10 +164,14 @@ export function createTrial(
     world: trialWorld(source.world.creature.genome, environment),
   });
 }
-export function advanceActive(lab: Laboratory, ticks = 300): void {
+export function advanceActive(
+  lab: Laboratory,
+  ticks = 300,
+  observe?: SimulationObserver,
+): void {
   if (!Number.isInteger(ticks) || ticks < 0 || ticks > 600)
     throw new Error("Durée d’essai invalide.");
-  advance(activeProfile(lab).world, ticks);
+  advance(activeProfile(lab).world, ticks, observe);
 }
 export const serializeLaboratory = (lab: Laboratory): string =>
   JSON.stringify(lab);
