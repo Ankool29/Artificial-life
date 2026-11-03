@@ -1,6 +1,7 @@
 import { CUES, MAX_FOODS, MAX_OBJECTS, OBJECT_CUES, type World } from "./types";
 import { createNeeds, createObjectBrain, INTERACTION_TICKS } from "./curiosity";
 import { GENE_RANGES } from "./genome";
+import { validInstrumental } from "./instrumental-persistence";
 
 const MAX_SAVE_BYTES = 100_000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -155,6 +156,10 @@ export function deserialize(json: string): World {
       (a.kind === "seek" && integer(a.foodId, 1, w.nextId - 1)) ||
       (!legacy && a.kind === "inspect" && integer(a.objectId, 1, nextId - 1)) ||
       (!legacy &&
+        a.kind === "use" &&
+        integer(a.targetId, 1, nextId - 1) &&
+        w.instrumental !== undefined) ||
+      (!legacy &&
         a.kind === "interact" &&
         integer(a.objectId, 1, nextId - 1) &&
         OBJECT_CUES.includes(a.cue as (typeof OBJECT_CUES)[number]) &&
@@ -233,6 +238,11 @@ export function deserialize(json: string): World {
       if (target && target.cue !== a.cue) return invalid();
     }
   }
+  if (
+    w.instrumental !== undefined &&
+    (legacy || !validInstrumental(w.instrumental, w as unknown as World))
+  )
+    return invalid();
   return w as unknown as World;
 }
 

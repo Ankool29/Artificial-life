@@ -14,6 +14,7 @@ import { generateGenome, physiology, GENE_LABELS } from "./sim/genome";
 import { hunger } from "./sim/metabolism";
 import { motivations } from "./sim/curiosity";
 import { addObject, removeObject } from "./sim/objects";
+import { addDispenser, refillDevice, removeDevice } from "./sim/devices";
 import { OBJECT_COLORS, OBJECT_NAMES } from "./ui/object-info";
 import { deserialize, serialize } from "./sim/persistence";
 import { addFood, createWorld, step } from "./sim/world";
@@ -85,6 +86,11 @@ objectTools.id = "object-tools";
 objectTools.hidden = true;
 objectTools.innerHTML = `<div class="food-picker object-picker" role="group" aria-label="Objet à déposer">${OBJECT_CUES.map((cue, i) => `<button class="food-choice ${i === 0 ? "selected" : ""}" data-object="${cue}" aria-pressed="${i === 0}" aria-label="${OBJECT_NAMES[cue]}"><span class="object-art ${cue}"></span><span>${OBJECT_NAMES[cue]}</span><span class="selection-dot"></span></button>`).join("")}</div><div class="food-footer"><span id="object-count">0 / ${MAX_OBJECTS} objets</span><button id="remove-object" class="text-button" aria-pressed="false">Retirer un objet</button></div><p id="object-hint" class="microcopy">Touchez le jardin pour déposer l’objet choisi.</p>`;
 tools.append(objectTools);
+const deviceTools = document.createElement("div");
+deviceTools.className = "device-tools";
+deviceTools.innerHTML = `<details><summary>Machine à levier · <span id="device-count">0 / 4</span></summary><label for="device-food">Baie fabriquée</label><select id="device-food">${CUES.map((cue) => `<option value="${cue}">${NAMES[cue]}</option>`).join("")}</select><div class="save-actions"><button id="place-device">Placer une distributrice</button><button id="refill-device">Recharger une machine</button></div><p class="microcopy">La créature découvre seule le levier. Réserve de 12 baies ; recharge physique de 8 s. Touchez le jardin pour placer, recharger ou retirer la machine.</p></details>`;
+objectTools.append(deviceTools);
+
 const portrait = matchMedia("(max-width: 620px)");
 function arrangeFeeding(): void {
   const destination = portrait.matches ? $("food-dock") : careCard;
@@ -99,7 +105,7 @@ let laboratory = createLaboratory(world);
 let renderedName = "";
 let selected: Cue = "amber";
 let selectedObject: ObjectCue = "chime";
-let placement: "food" | "object" | "remove" = "food";
+let placement: "food" | "object" | "remove" | "device" | "refill" = "food";
 let paused = false;
 let speed = 1;
 let inspector = false;
@@ -217,6 +223,8 @@ function sync(): void {
     `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
   $("seed-button").textContent = world.seed;
   $("food-count").textContent = `${world.foods.length} / ${MAX_FOODS} aliments`;
+  $("device-count").textContent =
+    `${world.instrumental?.devices.length ?? 0} / 4`;
   $("object-count").textContent =
     `${world.objects.length} / ${MAX_OBJECTS} objets`;
   $("scatter").toggleAttribute(
@@ -236,13 +244,15 @@ function sync(): void {
             ? "Milo expérimente un objet"
             : c.action.kind === "inspect"
               ? "Un objet intrigue Milo…"
-              : c.action.kind === "seek"
-                ? "Une odeur attire Milo…"
-                : m.stomach > 2
-                  ? "Milo digère et apprend"
-                  : c.action.kind === "wander"
-                    ? "Milo explore son jardin"
-                    : "Milo savoure un peu de calme";
+              : c.action.kind === "use"
+                ? "Milo essaie un mécanisme"
+                : c.action.kind === "seek"
+                  ? "Une odeur attire Milo…"
+                  : m.stomach > 2
+                    ? "Milo digère et apprend"
+                    : c.action.kind === "wander"
+                      ? "Milo explore son jardin"
+                      : "Milo savoure un peu de calme";
   $("status").textContent = state.replaceAll("Milo", () => individual.name);
   observatoryUI.render();
   if (!inspector) return;
@@ -376,6 +386,17 @@ $("remove-object").addEventListener("click", () => {
       ? "Touchez un objet pour le retirer. Les souvenirs restent."
       : "Touchez le jardin pour déposer l’objet choisi.";
 });
+$("place-device").addEventListener("click", () => {
+  choosePlacement(true);
+  placement = "device";
+  $("object-hint").textContent =
+    "Touchez le jardin pour déposer la machine choisie.";
+});
+$("refill-device").addEventListener("click", () => {
+  choosePlacement(true);
+  placement = "refill";
+  $("object-hint").textContent = "Touchez une machine pour remplir sa réserve.";
+});
 $("world").addEventListener("pointerdown", (event) => {
   if (!world.creature.alive) return;
   const pos = renderer.position(event.clientX, event.clientY);
@@ -390,10 +411,31 @@ $("world").addEventListener("pointerdown", (event) => {
       toast(
         "La limite de 12 objets est atteinte. Retirez-en un pour continuer.",
       );
+  } else if (placement === "device") {
+    if (
+      addDispenser(
+        world,
+        pos.x,
+        pos.y,
+        $<HTMLSelectElement>("device-food").value as Cue,
+      )
+    )
+      toast("Distributrice placée. Luma ne connaît pas sa fonction.");
+    else toast("La limite de quatre machines est atteinte.");
+  } else if (placement === "refill") {
+    const device = world.instrumental?.devices.find(
+      (d) => Math.hypot(d.x - pos.x, d.y - pos.y) < 42,
+    );
+    toast(
+      device && refillDevice(world, device.id)
+        ? "Réserve remplie. Aucun souvenir n’est modifié."
+        : "Touchez une machine pour la recharger.",
+    );
   } else {
-    const target = world.objects.reduce<
-      (typeof world.objects)[number] | undefined
-    >(
+    const target = [
+      ...world.objects,
+      ...(world.instrumental?.devices ?? []),
+    ].reduce<{ id: number; x: number; y: number } | undefined>(
       (nearest, object) =>
         Math.hypot(object.x - pos.x, object.y - pos.y) <
         Math.min(
@@ -405,7 +447,7 @@ $("world").addEventListener("pointerdown", (event) => {
       undefined,
     );
     if (target) {
-      removeObject(world, target.id);
+      removeObject(world, target.id) || removeDevice(world, target.id);
       toast("Objet retiré. Milo garde ses souvenirs.");
     } else toast("Touchez un objet pour le retirer.");
   }

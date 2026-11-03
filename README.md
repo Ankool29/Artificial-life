@@ -54,6 +54,16 @@ Le laboratoire permet de comparer deux profils, puis d’exécuter sur des copie
 
 [Utilisation, contrat de preuve et expériences](docs/learning-observatory.md) · [Étude C3/DS ayant guidé cette étape](docs/research/creatures3-engine-study.md)
 
+## Étape 4 : apprentissage instrumental
+
+Dans **Objets → Machine à levier**, placez une distributrice et choisissez la baie fabriquée. Sa réserve est limitée à 12 doses, avec un délai de production et une recharge physique. Luma découvre le geste par curiosité ; la machine ne lui donne aucune récompense directe. La baie est mangée et digérée normalement.
+
+Luma peut rapprocher une action d’une nouvelle ressource perçue, puis apprendre la valeur biologique de ses conséquences. Une absence suffisamment observée peut diminuer l’attente de production. L’observatoire distingue faits physiques, événements perçus, estimations apprises et scores réellement calculés.
+
+Sur la cohorte publiée de 24 graines, les sondes après acquisition bénéfique mesurent 3,92 tentatives contre 0,13 chez les témoins ; après panne, la moyenne redescend à 2,38. L’extinction est incomplète et cet essai ne démontre pas un meilleur rendement alimentaire global.
+
+[Mécanisme accessible, protocole, résultats et limites](docs/instrumental-learning.md) · [Données mesurées](docs/research/instrumental-results.json)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -66,26 +76,30 @@ Voir [les instructions complètes](docs/github-pages.md) pour le premier déploi
 
 Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du navigateur. Une seule créature ; aucune bibliothèque graphique ou dépendance d’exécution.
 
-| Module | Responsabilité |
-| --- | --- |
-| `types.ts` | Contrats versionnés, unités de monde, pas fixe de 100 ms |
-| `random.ts` | Graine textuelle et générateur pseudo-aléatoire à état explicite |
-| `genome.ts` | Génomes v1/v2, treize loci exprimés, génération indépendante du terrain et transmission bornée |
-| `metabolism.ts` | Capacité digestive, absorption différée, énergie, faim, toxines, santé, renforcement interne |
-| `brain.ts` | Mémoire associative par signal sensoriel, règle delta |
-| `perception.ts` | Filtrage spatial ; la composition chimique n’est jamais exposée aux décisions |
-| `curiosity.ts` | Stimulation, fatigue, stress, motivations et apprentissage des effets d’interaction |
-| `objects.ts` | Recettes physiques, placement et retrait des objets |
-| `decisions.ts` | Arbitrage faim, curiosité, repos, apaisement, valeurs apprises et distance |
-| `world.ts` | Initialisation, commandes d’ajout de nourriture, orchestration à pas fixe |
-| `persistence.ts` | JSON complet et validation structurelle des imports |
-| `src/ui/renderer.ts` | Dessin original et indépendant du hasard biologique |
-| `src/main.ts` | Contrôles, boucle d’horloge, interface biologique facultative et stockage |
-| `src/lab/laboratory.ts` | Profils indépendants, monde actif, terrains d’essai et archivage de la collection |
-| `src/ui/laboratory.ts` | Inspection des individus et expériences comparatives sans cohabitation |
-| `diagnostics.ts` | Charges de diagnostic détachées, absentes de l’état sauvegardé |
-| `src/observatory/` | Capture bornée et protocoles sur copies isolées |
-| `src/ui/observatory.ts` | Dernière décision, associations, chronologie et comparaison de deux profils |
+| Module                            | Responsabilité                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `types.ts`                        | Contrats versionnés, unités de monde, pas fixe de 100 ms                                       |
+| `random.ts`                       | Graine textuelle et générateur pseudo-aléatoire à état explicite                               |
+| `genome.ts`                       | Génomes v1/v2, treize loci exprimés, génération indépendante du terrain et transmission bornée |
+| `metabolism.ts`                   | Capacité digestive, absorption différée, énergie, faim, toxines, santé, renforcement interne   |
+| `brain.ts`                        | Mémoire associative par signal sensoriel, règle delta                                          |
+| `perception.ts`                   | Filtrage spatial ; la composition chimique n’est jamais exposée aux décisions                  |
+| `curiosity.ts`                    | Stimulation, fatigue, stress, motivations et apprentissage des effets d’interaction            |
+| `objects.ts`                      | Recettes physiques, placement et retrait des objets                                            |
+| `decisions.ts`                    | Arbitrage faim, curiosité, repos, apaisement, valeurs apprises et distance                     |
+| `world.ts`                        | Initialisation, commandes d’ajout de nourriture, orchestration à pas fixe                      |
+| `persistence.ts`                  | JSON complet et validation structurelle des imports                                            |
+| `src/ui/renderer.ts`              | Dessin original et indépendant du hasard biologique                                            |
+| `src/main.ts`                     | Contrôles, boucle d’horloge, interface biologique facultative et stockage                      |
+| `src/lab/laboratory.ts`           | Profils indépendants, monde actif, terrains d’essai et archivage de la collection              |
+| `src/ui/laboratory.ts`            | Inspection des individus et expériences comparatives sans cohabitation                         |
+| `diagnostics.ts`                  | Charges de diagnostic détachées, absentes de l’état sauvegardé                                 |
+| `src/observatory/`                | Capture bornée et protocoles sur copies isolées                                                |
+| `src/ui/observatory.ts`           | Dernière décision, associations, chronologie et comparaison de deux profils                    |
+| `devices.ts`                      | Physique indépendante des distributeurs : réserve, production, recharge                        |
+| `instrumental.ts`                 | Perception, transitions, épisodes et crédit biologique différé                                 |
+| `instrumental-persistence.ts`     | Validation de l’extension cognitive et physique optionnelle                                    |
+| `src/experiments/instrumental.ts` | Cohorte reproductible, témoins et sondes à état corporel identique                             |
 
 Voir [la conception détaillée](docs/architecture.md) pour les équations, compromis et pistes d’évolution.
 
@@ -96,6 +110,7 @@ Voir [la conception détaillée](docs/architecture.md) pour les équations, comp
 - Le JSON conserve le génome, les bolus en cours de digestion, la mémoire, l’action, les échéances de décision et l’état du générateur.
 - Le format actuel est **v2**. Les sauvegardes **v1** sont migrées automatiquement : valeurs biologiques, préférences alimentaires, digestion, action, temps et hasard sont conservés ; les besoins et la mémoire des objets sont ajoutés sans tirage aléatoire. Les v2 conservent aussi les objets, leur récupération et une interaction en cours. La clé locale existante est conservée pour retrouver les jardins déjà sauvegardés.
 - Les nouveaux génomes sont versionnés v2 à l’intérieur des mondes ; les génomes v1 continuent d’utiliser leurs équations d’origine. L’archive complète du laboratoire possède son propre format versionné et conserve aussi les ascendants génétiques et les terrains initiaux des essais.
+- Les machines introduisent une extension instrumentale optionnelle versionnée, sans changer le format de base des anciens mondes. Les délais physiques, mémoires, épisodes et crédits de digestion sont conservés ; l’historique de diagnostic reste uniquement en mémoire.
 - Une même graine **et la même séquence de commandes aux mêmes ticks** reproduisent l’évolution dans le même runtime. Le temps mural, la fréquence d’affichage et l’ouverture du panneau ne modifient pas la simulation.
 - L’onglet masqué et les dialogues suspendent la simulation. Pause et vitesse sont des préférences d’affichage, pas un état biologique sauvegardé.
 - Les fonctions trigonométriques peuvent différer de quelques bits entre moteurs JavaScript : une identité binaire entre moteurs différents n’est pas garantie.

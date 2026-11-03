@@ -15,11 +15,13 @@ import {
   type ObjectEffects,
   type World,
 } from "../sim/types";
+import type { InstrumentalTrace } from "../sim/instrumental-types";
 
 export const HISTORY_LIMIT = 320;
 export const POINT_LIMIT = 180;
 export const SAMPLE_LIMIT = 120;
 export type TimelineKind =
+  | "instrumental"
   | "capture"
   | "perception"
   | "decision"
@@ -77,6 +79,7 @@ export interface ObservationSession {
   lastDecision?: DecisionTrace;
   foodEffects: Partial<Record<Cue, FoodConsequence>>;
   objectEffects: Partial<Record<ObjectCue, ObjectEffects>>;
+  instrumental: (InstrumentalTrace & { tick: number; segment: number })[];
 }
 interface Context {
   session: ObservationSession;
@@ -91,6 +94,8 @@ interface Context {
 const signed = (n: number): string => `${n >= 0 ? "+" : ""}${n.toFixed(3)}`;
 export function actionLabel(action: Action): string {
   switch (action.kind) {
+    case "use":
+      return `Actionner le levier #${action.targetId}`;
     case "seek":
       return `Approcher l’aliment #${action.foodId}`;
     case "inspect":
@@ -185,6 +190,7 @@ export class LearningObservatory {
           samples: [],
           foodEffects: {},
           objectEffects: {},
+          instrumental: [],
         },
         generation: -1,
         nextId: 0,
@@ -266,6 +272,60 @@ export class LearningObservatory {
     const s = ctx.session,
       tick = event.tick;
     switch (event.kind) {
+      case "instrumental": {
+        const t = event.trace;
+        bounded(
+          s.instrumental,
+          { ...t, tick, segment: s.segment },
+          POINT_LIMIT,
+        );
+        const titles = {
+          attempt: "Action propre : levier actionné",
+          production: "Fait physique : baie produite",
+          perceived: "Événement perçu par la créature",
+          transition: "Estimation action → ressource",
+          credit: "Crédit biologique différé",
+          score: "Score instrumental effectivement calculé",
+        };
+        append(
+          ctx,
+          tick,
+          "instrumental",
+          titles[t.phase],
+          [
+            `Événement : ${t.event ?? t.phase} ; situation : ${t.situation ?? "—"}.`,
+            ...(t.probability === undefined
+              ? []
+              : [
+                  `Estimation de transition : ${t.beforeProbability === undefined ? "—" : t.beforeProbability.toFixed(3)} → ${t.probability.toFixed(3)}.`,
+                ]),
+            ...(t.value === undefined
+              ? []
+              : [`Valeur biologique apprise : ${signed(t.value)}.`]),
+            ...(t.reward === undefined
+              ? []
+              : [
+                  `Bilan réellement digéré ${signed(t.reward)} ; éligibilité temporelle ${t.eligibility!.toFixed(3)}.`,
+                ]),
+            ...(t.score === undefined
+              ? []
+              : [
+                  `Score de candidature ${signed(t.score)} ; ce n’est pas une probabilité de sélection.`,
+                ]),
+            ...(t.learned === false
+              ? ["Témoin : plasticité instrumentale désactivée."]
+              : []),
+          ],
+          [
+            ...(t.targetId === undefined ? [] : [`levier #${t.targetId}`]),
+            ...(t.foodId === undefined ? [] : [`aliment #${t.foodId}`]),
+            ...(t.episodeId === undefined
+              ? []
+              : [`épisode instrumental ${t.episodeId}`]),
+          ],
+        );
+        break;
+      }
       case "decision": {
         const ref = `d${ctx.nextId + 1}`;
         s.lastDecision = event.trace;

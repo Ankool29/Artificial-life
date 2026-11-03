@@ -16,6 +16,18 @@ import {
 } from "./curiosity";
 import { hashSeed, random } from "./random";
 import { bodyState, type SimulationObserver } from "./diagnostics";
+import { pressDevice, updateDevices } from "./devices";
+import {
+  beginAction,
+  newlyPerceivedResources,
+  observeChange,
+  perceiveActuators,
+  perceiveChange,
+  registerIngestion,
+  reinforceInstrumental,
+  updateEpisodes,
+} from "./instrumental";
+import type { GutCredit, InstrumentalTrace } from "./instrumental-types";
 import {
   clamp,
   CUES,
@@ -112,14 +124,44 @@ export function step(world: World, observe?: SimulationObserver): void {
   const c = world.creature;
   if (!c.alive) return;
   world.tick++;
+  const instrumentalObserver = observe
+    ? (trace: InstrumentalTrace) =>
+        observe({ kind: "instrumental", tick: world.tick, trace })
+    : undefined;
+  for (const physical of updateDevices(world)) {
+    if (physical.kind === "resource")
+      instrumentalObserver?.({
+        phase: "production",
+        targetId: physical.targetId,
+        foodId: physical.foodId,
+        event: "resource",
+      });
+  }
+  if (world.instrumental) {
+    for (const change of newlyPerceivedResources(
+      world,
+      perceive(c, world.foods),
+    ))
+      observeChange(world, change, instrumentalObserver);
+  }
   if (world.tick >= c.nextDecision && c.action.kind !== "interact") {
     c.action = decide(
       world,
       perceive(c, world.foods),
       perceiveObjects(world),
       observe
-        ? (trace) => observe({ kind: "decision", tick: world.tick, trace })
+        ? (trace) => {
+            observe({ kind: "decision", tick: world.tick, trace });
+            for (const candidate of trace.candidates)
+              if (candidate.instrumental)
+                instrumentalObserver?.({
+                  phase: "score",
+                  ...candidate.instrumental,
+                  score: candidate.score,
+                });
+          }
         : undefined,
+      perceiveActuators(world),
     );
     c.nextDecision = world.tick + 20;
   }
@@ -133,6 +175,13 @@ export function step(world: World, observe?: SimulationObserver): void {
     target = world.objects.find(
       (object) => object.id === id && object.availableAt <= world.tick,
     );
+    if (!target) {
+      c.action = { kind: "rest" };
+      c.nextDecision = world.tick;
+    }
+  } else if (c.action.kind === "use") {
+    const targetId = c.action.targetId;
+    target = world.instrumental?.devices.find((d) => d.id === targetId);
     if (!target) {
       c.action = { kind: "rest" };
       c.nextDecision = world.tick;
@@ -156,9 +205,24 @@ export function step(world: World, observe?: SimulationObserver): void {
         if (food && ingest(c.metabolism, food)) {
           world.foods = world.foods.filter((item) => item.id !== id);
           c.meals++;
+          registerIngestion(world, food.id);
           event(world, { kind: "meal", cue: food.cue });
           observe?.({ kind: "ingestion", tick: world.tick, food: { ...food } });
         }
+      }
+      if (c.action.kind === "use") {
+        const targetId = c.action.targetId;
+        const d = world.instrumental!.devices.find((d) => d.id === targetId)!;
+        const perceived = perceiveActuators(world).find((a) => a.id === d.id);
+        if (perceived)
+          beginAction(
+            world,
+            perceived,
+            perceive(c, world.foods),
+            instrumentalObserver,
+          );
+        const change = perceiveChange(world, pressDevice(world, d));
+        if (change) observeChange(world, change, instrumentalObserver);
       }
       if (c.action.kind === "inspect") {
         const id = c.action.objectId;
@@ -182,12 +246,24 @@ export function step(world: World, observe?: SimulationObserver): void {
       }
     }
   }
+  const completedSlots: number[] = [];
+  const completedCredits: (GutCredit | undefined)[] = [];
   for (const outcome of metabolize(
     c.metabolism,
     c.genome,
     moving,
-    observe
-      ? (trace) => observe({ kind: "absorption", tick: world.tick, trace })
+    observe || world.instrumental
+      ? (trace) => {
+          observe?.({
+            kind: "absorption",
+            tick: world.tick,
+            trace: { ...trace },
+          });
+          if (trace.completed && world.instrumental) {
+            completedSlots.push(trace.slot);
+            completedCredits.push(world.instrumental.gut[trace.slot]);
+          }
+        }
       : undefined,
   )) {
     const before = observe ? { ...c.brain[outcome.cue] } : undefined;
@@ -198,6 +274,12 @@ export function step(world: World, observe?: SimulationObserver): void {
       c.genome.genes.learningRate,
     );
     event(world, { kind: "learn", cue: outcome.cue, value: outcome.reward });
+    reinforceInstrumental(
+      world,
+      completedCredits.shift(),
+      outcome.reward,
+      instrumentalObserver,
+    );
     if (observe && before)
       observe({
         kind: "food-learning",
@@ -209,6 +291,10 @@ export function step(world: World, observe?: SimulationObserver): void {
         rate: c.genome.genes.learningRate,
       });
   }
+  if (world.instrumental)
+    world.instrumental.gut = world.instrumental.gut.filter(
+      (_, slot) => !completedSlots.includes(slot),
+    );
   updateNeeds(c, moving);
   if (c.action.kind === "interact") {
     const action = c.action;
@@ -251,6 +337,7 @@ export function step(world: World, observe?: SimulationObserver): void {
     c.action = { kind: "rest" };
     event(world, { kind: "death" });
   }
+  updateEpisodes(world, instrumentalObserver);
   observe?.({
     kind: "state",
     tick: world.tick,

@@ -1681,3 +1681,43 @@ dialog > p {
     padding: 8px 6px;
   }
 }
+
+.device-tools {
+  border-top: 1px solid #d5dfc8;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+.device-tools summary {
+  min-height: 44px;
+  font-size: 12px;
+}
+.device-tools label {
+  display: block;
+  font-size: 11px;
+  margin: 8px 0;
+}
+.device-tools select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #cbd8bc;
+  border-radius: 8px;
+  color: inherit;
+  background: #fcfdf7;
+  font: inherit;
+}
+.device-tools .save-actions {
+  margin: 10px 0;
+}
+.instrumental-device {
+  padding-top: 10px;
+  margin-top: 14px;
+  border-top: 1px solid #dce3d3;
+}
+.instrumental-summary {
+  background: #e7efdc;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.85;
+}

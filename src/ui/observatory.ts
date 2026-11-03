@@ -19,6 +19,7 @@ import {
 } from "../observatory/experiments";
 import { NAMES } from "./renderer";
 import { OBJECT_NAMES } from "./object-info";
+import { instrumentalMarkup } from "./instrumental";
 
 const escape = (value: string): string =>
   value.replace(
@@ -46,6 +47,7 @@ const motiveNames = {
   comfort: "Apaisement",
 };
 const kindNames: Record<TimelineKind, string> = {
+  instrumental: "Apprentissage instrumental",
   capture: "Capture / intervention",
   perception: "Perception",
   decision: "Décision",
@@ -106,7 +108,7 @@ export function createObservatoryPanel(
   element.className = "biology-card observatory";
   element.hidden = true;
   element.setAttribute("aria-label", "Observatoire de l’apprentissage");
-  element.innerHTML = `<div class="dialog-heading"><p class="eyebrow">OBSERVATOIRE DE L’APPRENTISSAGE</p><button class="icon-button" id="obs-close" aria-label="Fermer l’observatoire">✕</button></div><h2>Voir ce qui s’apprend.</h2><p class="microcopy">Données du moteur et mesures de capture. Aucun raisonnement causal supplémentaire n’est attribué à Luma.</p><label class="sense-toggle"><input type="checkbox" id="obs-record" checked>Enregistrer l’activité</label><p id="obs-summary" class="microcopy"></p><p id="obs-current"></p><details open><summary>Dernière décision réellement calculée</summary><div id="obs-decision"></div></details><details open><summary>Associations et conséquences</summary><div id="obs-memories" class="observation-memories"></div></details><details open><summary>Évolution des associations</summary><label for="obs-cue">Signal à suivre</label><select id="obs-cue">${[...CUES, ...OBJECT_CUES].map((cue) => `<option value="${cue}">${name(cue)}</option>`).join("")}</select><div id="obs-curve"></div><div id="obs-values" class="observatory-table-wrap"></div></details><details><summary>Chronologie consultable</summary><label for="obs-filter">Événements à afficher</label><select id="obs-filter"><option value="all">Tous les événements</option>${Object.entries(
+  element.innerHTML = `<div class="dialog-heading"><p class="eyebrow">OBSERVATOIRE DE L’APPRENTISSAGE</p><button class="icon-button" id="obs-close" aria-label="Fermer l’observatoire">✕</button></div><h2>Voir ce qui s’apprend.</h2><p class="microcopy">Données du moteur et mesures de capture. Aucun raisonnement causal supplémentaire n’est attribué à Luma.</p><label class="sense-toggle"><input type="checkbox" id="obs-record" checked>Enregistrer l’activité</label><p id="obs-summary" class="microcopy"></p><p id="obs-current"></p><details open><summary>Dernière décision réellement calculée</summary><div id="obs-decision"></div></details><details open><summary>Actions et conséquences extérieures</summary><div id="obs-instrumental"></div></details><details open><summary>Associations et conséquences</summary><div id="obs-memories" class="observation-memories"></div></details><details open><summary>Évolution des associations</summary><label for="obs-cue">Signal à suivre</label><select id="obs-cue">${[...CUES, ...OBJECT_CUES].map((cue) => `<option value="${cue}">${name(cue)}</option>`).join("")}</select><div id="obs-curve"></div><div id="obs-values" class="observatory-table-wrap"></div></details><details><summary>Chronologie consultable</summary><label for="obs-filter">Événements à afficher</label><select id="obs-filter"><option value="all">Tous les événements</option>${Object.entries(
     kindNames,
   )
     .map(([key, label]) => `<option value="${key}">${label}</option>`)
@@ -131,6 +133,7 @@ export function createObservatoryPanel(
     $("obs-summary").textContent =
       `${profile.name} · tick ${w.tick} · ${recorder.enabled ? "capture active" : "capture suspendue"} · historique en mémoire seulement, perdu au rechargement. Limites par profil : ${HISTORY_LIMIT} événements, ${POINT_LIMIT} points associatifs, ${SAMPLE_LIMIT} états. ${s?.dropped ?? 0} événements anciens retirés.`;
     $("obs-current").textContent = `Action actuelle : ${actionLabel(c.action)}`;
+    $("obs-instrumental").innerHTML = instrumentalMarkup(w, s);
     const d = s?.lastDecision;
     $("obs-decision").innerHTML = d
       ? `<p class="microcopy">Instantané au tick ${d.tick}, avant déplacement et métabolisme : ${escape(actionLabel(d.chosen))}. Branche exécutée : <strong>${d.branch}</strong> ; politique alimentaire : <strong>${d.foodPolicy}</strong>.</p><dl class="gene-list">${Object.entries(
@@ -142,7 +145,7 @@ export function createObservatoryPanel(
           )
           .join(
             "",
-          )}<dt>Stimulation / fatigue / stress</dt><dd>${d.needs.stimulation.toFixed(2)} / ${d.needs.fatigue.toFixed(2)} / ${d.needs.stress.toFixed(2)}</dd><dt>Énergie / estomac</dt><dd>${d.energy.toFixed(2)} / ${d.stomach.toFixed(2)}</dd></dl><h3>Perception utilisée</h3><p class="microcopy">Aliments : ${d.foods.map((f) => `${name(f.cue)} #${f.id}, distance ${f.distance.toFixed(2)}`).join(" ; ") || "aucun"}.</p><p class="microcopy">Objets : ${d.objects.map((o) => `${name(o.cue)} #${o.id}, distance ${o.distance.toFixed(2)}, ${o.unknown ? "inconnu" : "déjà expérimenté"}`).join(" ; ") || "aucun"}.</p><div class="observatory-table-wrap"><table><caption>Scores calculés au tick ${d.tick}</caption><thead><tr><th>Étape / candidat</th><th>Score</th><th>Association utilisée</th></tr></thead><tbody>${d.candidates.map((candidate) => `<tr><th scope="row">${candidate.stage === "food" ? "Sélection alimentaire" : "Arbitrage"}<br>${escape(actionLabel(candidate.action))}</th><td>${candidate.score.toFixed(6)}</td><td>${candidate.association ? `${name(candidate.association.cue)} : ${signed(candidate.association.value)} · ${candidate.association.experiences} expériences` : "Aucune valeur associative lue à cette étape"}${candidate.predictedEffects ? `<br>Effets attendus bornés utilisés : ${effects(candidate.predictedEffects)}` : ""}</td></tr>`).join("")}</tbody></table></div><p class="microcopy">Les étapes de sélection alimentaire et d’arbitrage sont distinctes. En exploration alimentaire, les autres aliments ne sont pas notés. Si la branche urgent-food est exécutée, repos et objets ne sont pas évalués. L’exploration spatiale de repli n’a pas de score. Aucun score n’est recalculé ici.</p>`
+          )}<dt>Stimulation / fatigue / stress</dt><dd>${d.needs.stimulation.toFixed(2)} / ${d.needs.fatigue.toFixed(2)} / ${d.needs.stress.toFixed(2)}</dd><dt>Énergie / estomac</dt><dd>${d.energy.toFixed(2)} / ${d.stomach.toFixed(2)}</dd></dl><h3>Perception utilisée</h3><p class="microcopy">Aliments : ${d.foods.map((f) => `${name(f.cue)} #${f.id}, distance ${f.distance.toFixed(2)}`).join(" ; ") || "aucun"}.</p><p class="microcopy">Objets : ${d.objects.map((o) => `${name(o.cue)} #${o.id}, distance ${o.distance.toFixed(2)}, ${o.unknown ? "inconnu" : "déjà expérimenté"}`).join(" ; ") || "aucun"}.</p><div class="observatory-table-wrap"><table><caption>Scores calculés au tick ${d.tick}</caption><thead><tr><th>Étape / candidat</th><th>Score</th><th>Association utilisée</th></tr></thead><tbody>${d.candidates.map((candidate) => `<tr><th scope="row">${candidate.stage === "food" ? "Sélection alimentaire" : "Arbitrage"}<br>${escape(actionLabel(candidate.action))}</th><td>${candidate.score.toFixed(6)}</td><td>${candidate.instrumental ? `Mémoire instrumentale #${candidate.instrumental.targetId} : estimation ${(candidate.instrumental.probability * 100).toFixed(1)} %, valeur ${signed(candidate.instrumental.value)}, ${candidate.instrumental.attempts} essais` : candidate.association ? `${name(candidate.association.cue)} : ${signed(candidate.association.value)} · ${candidate.association.experiences} expériences` : "Aucune valeur associative lue à cette étape"}${candidate.predictedEffects ? `<br>Effets attendus bornés utilisés : ${effects(candidate.predictedEffects)}` : ""}</td></tr>`).join("")}</tbody></table></div><p class="microcopy">Les étapes de sélection alimentaire et d’arbitrage sont distinctes. En exploration alimentaire, les autres aliments ne sont pas notés. Si la branche urgent-food est exécutée, repos et objets ne sont pas évalués. L’exploration spatiale de repli n’a pas de score. Aucun score n’est recalculé ici.</p>`
       : '<p class="microcopy">Aucune décision capturée depuis l’ouverture ou la reprise. L’action actuelle peut précéder cette capture.</p>';
     $("obs-memories").innerHTML = [
       ...CUES.map((cue) => {
