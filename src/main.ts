@@ -1,4 +1,14 @@
 import "./style.css";
+import {
+  activeProfile,
+  createLaboratory,
+  deserializeLaboratory,
+  MAX_LAB_BYTES,
+  replaceActiveWorld,
+  serializeLaboratory,
+} from "./lab/laboratory";
+import { createLaboratoryDialog } from "./ui/laboratory";
+import { generateGenome, physiology, GENE_LABELS } from "./sim/genome";
 import { hunger } from "./sim/metabolism";
 import { motivations } from "./sim/curiosity";
 import { addObject, removeObject } from "./sim/objects";
@@ -36,7 +46,8 @@ app.innerHTML = `
     <div class="header-actions"><button class="icon-button" id="help" aria-label="Comment jouer">${icon("help")}</button><button class="icon-button" id="storage" aria-label="Sauvegardes et nouveau monde">${icon("save")}</button></div>
   </header>
   <main>
-    <div class="intro"><div><p class="eyebrow">EXPÉRIENCE 002 · VIE ARTIFICIELLE</p><h1>Le jardin vivant<span>.</span></h1><p class="subtitle">Prenez soin de Milo. Laissez la vie faire le reste.</p></div><span class="prototype"><i></i> Prototype vivant</span></div>
+    <div class="intro"><div><p class="eyebrow">EXPÉRIENCE 003 · VIE ARTIFICIELLE</p><h1>Le jardin vivant<span>.</span></h1><p class="subtitle">Prenez soin de Milo. Laissez la vie faire le reste.</p></div><span class="prototype"><i></i> Prototype vivant</span></div>
+    <div class="laboratory-entry"><span id="active-individual">Individu actif · Milo</span><button id="open-lab">Ouvrir le laboratoire <span aria-hidden="true">↗</span></button></div>
     <div class="workspace">
       <section class="garden-card" aria-label="Terrarium de Milo">
         <div class="garden-heading"><span><i class="live-dot"></i> TERRARIUM <span class="muted">/ 01</span></span><span id="clock">00:00</span></div>
@@ -49,11 +60,11 @@ app.innerHTML = `
         <div class="field-note"><span>NOTE DE TERRAIN</span><p>« Il ne sait pas encore ce qui est bon pour lui.<br>Il va l’apprendre. »</p><div><span class="note-line"></span> Le début d’une histoire</div></div>
       </aside>
     </div>
-    <footer><span>${icon("leaf")} Imprévisible à regarder. Reproductible à étudier.</span><span>Graine <button id="seed-button" class="text-button"></button></span></footer>
+    <footer><span>${icon("leaf")} Imprévisible à regarder. Reproductible à étudier.</span><span>Terrain <button id="seed-button" class="text-button"></button></span></footer>
   </main>
   <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="help-dialog"><div class="dialog-heading"><p class="eyebrow">BIENVENUE DANS LUMA</p><button class="icon-button" data-close aria-label="Fermer">${icon("close")}</button></div><h2>Accompagnez une vie<br>qui apprend.</h2><p>Déposez des aliments dans le jardin. Milo décide seul où aller et quoi goûter : vous façonnez son environnement.</p><ol class="help-steps"><li><strong>Semez et observez.</strong> Trois aliments, trois compositions. Milo ne les connaît pas à sa naissance.</li><li><strong>Laissez le temps d’apprendre.</strong> La digestion prend quelques secondes ; plusieurs repas renforcent la mémoire. Le bouton 1× accélère le temps.</li><li><strong>Prenez soin de lui.</strong> Renouvelez sa nourriture. Un mauvais repas affecte sa santé ; le manque de nourriture aussi.</li></ol><p>Dans la palette <strong>Objets</strong>, placez un carillon, un coussin de mousse ou un galet prismatique. Une interaction dure trois secondes : elle peut stimuler, fatiguer ou apaiser Milo. Il apprend leurs conséquences et revient vers les objets selon ses besoins. Le mode « Retirer un objet » libère de la place.</p><p>« Observer Milo » révèle sa faim, sa biochimie et ses préférences. Une préférence n’est pas une certitude : Milo continue parfois à explorer.</p><p class="microcopy">Le jardin s’arrête quand cet onglet est masqué. Sauvegarde locale automatique toutes les 15 secondes. Aucun compte ni envoi de données.</p><button class="primary-button" data-close>Entrer dans le jardin ${icon("arrow")}</button></dialog>
-  <dialog id="save-dialog"><div class="dialog-heading"><p class="eyebrow">VOTRE PETIT MONDE</p><button class="icon-button" data-close aria-label="Fermer">${icon("close")}</button></div><h2>Garder une trace.</h2><p>Le génome, la mémoire, la digestion et le hasard sont conservés ensemble.</p><div class="save-actions"><button id="save-local">Sauvegarder ici</button><button id="load-local">Charger la sauvegarde</button><button id="export">Exporter un fichier JSON</button><button id="import">Importer un fichier JSON</button></div><input type="file" id="file" accept=".json,application/json" hidden><div class="new-world"><h3>Une nouvelle vie</h3><p class="microcopy">Remplace le jardin et sa sauvegarde locale. Exportez-le pour le conserver.</p><label for="seed">Graine reproductible</label><input id="seed" type="text" maxlength="80" value="luma-01" autocomplete="off"><button id="new-world" class="primary-button">Faire éclore ${icon("arrow")}</button></div></dialog>
+  <dialog id="help-dialog"><div class="dialog-heading"><p class="eyebrow">BIENVENUE DANS LUMA</p><button class="icon-button" data-close aria-label="Fermer">${icon("close")}</button></div><h2>Accompagnez une vie<br>qui apprend.</h2><p>Déposez des aliments dans le jardin. Milo décide seul où aller et quoi goûter : vous façonnez son environnement.</p><ol class="help-steps"><li><strong>Semez et observez.</strong> Trois aliments, trois compositions. Milo ne les connaît pas à sa naissance.</li><li><strong>Laissez le temps d’apprendre.</strong> La digestion prend quelques secondes ; plusieurs repas renforcent la mémoire. Le bouton 1× accélère le temps.</li><li><strong>Prenez soin de lui.</strong> Renouvelez sa nourriture. Un mauvais repas affecte sa santé ; le manque de nourriture aussi.</li></ol><p>Dans la palette <strong>Objets</strong>, placez un carillon, un coussin de mousse ou un galet prismatique. Une interaction dure trois secondes : elle peut stimuler, fatiguer ou apaiser Milo. Il apprend leurs conséquences et revient vers les objets selon ses besoins. Le mode « Retirer un objet » libère de la place.</p><p>Le <strong>laboratoire</strong> conserve plusieurs profils indépendants. Vous pouvez créer un individu à partir d’une graine génétique, le dériver d’un parent et comparer des essais neufs sur un terrain mémorisé. Seul le profil actif évolue.</p><p>« Observer Milo » révèle sa faim, sa biochimie et ses préférences. Une préférence n’est pas une certitude : Milo continue parfois à explorer.</p><p class="microcopy">Le jardin s’arrête quand cet onglet est masqué. Sauvegarde locale automatique toutes les 15 secondes. Aucun compte ni envoi de données.</p><button class="primary-button" data-close>Entrer dans le jardin ${icon("arrow")}</button></dialog>
+  <dialog id="save-dialog"><div class="dialog-heading"><p class="eyebrow">VOTRE PETIT MONDE</p><button class="icon-button" data-close aria-label="Fermer">${icon("close")}</button></div><h2>Garder une trace.</h2><p>La sauvegarde locale conserve tous les profils. L’export individuel conserve le jardin actif ; l’export du laboratoire les conserve tous. L’import d’un laboratoire remplace la collection courante : exportez-la pour la garder.</p><div class="save-actions"><button id="save-local">Sauvegarder ici</button><button id="load-local">Charger la sauvegarde</button><button id="export">Exporter un fichier JSON</button><button id="import">Importer un fichier JSON</button><button id="export-lab">Exporter le laboratoire</button><button id="import-lab">Importer le laboratoire</button></div><input type="file" id="file" accept=".json,application/json" hidden><div class="new-world"><h3>Une nouvelle vie</h3><p class="microcopy">Remplace seulement le jardin du profil actif. Les autres profils restent conservés. Exportez l’individu avant de le remplacer pour garder son état.</p><label for="seed">Graine reproductible</label><input id="seed" type="text" maxlength="80" value="luma-01" autocomplete="off"><button id="new-world" class="primary-button">Faire éclore ${icon("arrow")}</button></div></dialog>
 `;
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T =>
@@ -80,7 +91,10 @@ function arrangeFeeding(): void {
 portrait.addEventListener("change", arrangeFeeding);
 arrangeFeeding();
 const STORAGE_KEY = "luma.world.v1";
+const LAB_STORAGE_KEY = "luma.laboratory.v1";
 let world = createWorld();
+let laboratory = createLaboratory(world);
+let renderedName = "";
 let selected: Cue = "amber";
 let selectedObject: ObjectCue = "chime";
 let placement: "food" | "object" | "remove" = "food";
@@ -103,19 +117,39 @@ function toast(message: string): void {
 }
 
 try {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    world = deserialize(saved);
-    toast("Votre jardin a retrouvé sa petite vie.");
+  const savedLab = localStorage.getItem(LAB_STORAGE_KEY);
+  if (savedLab) {
+    laboratory = deserializeLaboratory(savedLab);
+    world = activeProfile(laboratory).world;
+    toast("Votre laboratoire et ses individus sont restaurés.");
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      world = deserialize(saved);
+      laboratory = createLaboratory(world);
+      toast("Votre jardin a retrouvé sa petite vie.");
+    }
   }
 } catch {
-  toast("Sauvegarde inaccessible. Vous pouvez toujours exporter votre jardin.");
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      world = deserialize(saved);
+      laboratory = createLaboratory(world);
+    }
+  } catch {
+    /* Keep the fresh world if both local files are inaccessible. */
+  }
+  toast(
+    "Laboratoire inaccessible. Le dernier jardin valide est conservé ; un export JSON reste possible.",
+  );
 }
 
 function save(announce = false): void {
   try {
+    localStorage.setItem(LAB_STORAGE_KEY, serializeLaboratory(laboratory));
     localStorage.setItem(STORAGE_KEY, serialize(world));
-    if (announce) toast("Jardin sauvegardé sur cet appareil.");
+    if (announce) toast("Laboratoire et profils sauvegardés sur cet appareil.");
   } catch {
     if (!storageFailed || announce)
       toast("Stockage indisponible. Utilisez l’export JSON.");
@@ -124,11 +158,16 @@ function save(announce = false): void {
 }
 
 function setWorld(next: typeof world): void {
+  replaceActiveWorld(laboratory, next);
   world = next;
   accumulator = 0;
   previous = performance.now();
   sync();
-  renderer.draw(world, $<HTMLInputElement>("senses").checked);
+  renderer.draw(
+    world,
+    $<HTMLInputElement>("senses").checked,
+    activeProfile(laboratory).name,
+  );
 }
 
 function setInspector(open: boolean): void {
@@ -140,6 +179,16 @@ function setInspector(open: boolean): void {
 }
 
 function sync(): void {
+  const individual = activeProfile(laboratory);
+  $("active-individual").textContent = `Individu actif · ${individual.name}`;
+  if (renderedName !== individual.name) {
+    renderedName = individual.name;
+    $("inspect").innerHTML = icon("eye");
+    $("inspect").append(
+      document.createTextNode(` Observer ${individual.name}`),
+    );
+    document.querySelector(".creature-title h2")!.textContent = individual.name;
+  }
   const c = world.creature,
     m = c.metabolism;
   const seconds = Math.floor(world.tick * DT);
@@ -173,7 +222,7 @@ function sync(): void {
                   : c.action.kind === "wander"
                     ? "Milo explore son jardin"
                     : "Milo savoure un peu de calme";
-  $("status").textContent = state;
+  $("status").textContent = state.replaceAll("Milo", () => individual.name);
   if (!inspector) return;
   $("age").textContent =
     `${Math.floor(seconds / 60)} min ${seconds % 60} s de vie`;
@@ -235,7 +284,17 @@ function sync(): void {
     return `<div class="memory-row"><i style="background:${OBJECT_COLORS[cue]}"></i><span>${OBJECT_NAMES[cue]}<small>${memory.interactions} expérience${memory.interactions > 1 ? "s" : ""}</small></span><span class="memory-value ${memory.value < -0.12 ? "negative" : ""}">${label}<small>${signed(memory.value)}</small></span></div>${memory.interactions ? `<p class="microcopy expected-effects">Effets appris : stimulation ${signed(e.stimulation)}, fatigue ${signed(e.fatigue)}, stress ${signed(e.stress)}, énergie ${signed(e.energy)}.</p>` : ""}`;
   }).join("");
   $("genes").innerHTML =
-    `<dl class="gene-list"><dt>Stimulation</dt><dd>${c.needs.stimulation.toFixed(1)} %</dd><dt>Fatigue</dt><dd>${c.needs.fatigue.toFixed(1)} %</dd><dt>Stress</dt><dd>${c.needs.stress.toFixed(1)} %</dd><dt>Faim</dt><dd>${Math.round(hunger(m) * 100)} %</dd><dt>Contenu digestif</dt><dd>${m.stomach.toFixed(1)} / 36</dd><dt>Toxines</dt><dd>${m.toxins.toFixed(1)}</dd><dt>Assimilation</dt><dd>${Math.round(c.genome.genes.efficiency * 100)} %</dd><dt>Détoxification</dt><dd>${c.genome.genes.detox.toFixed(2)} / s</dd><dt>Portée sensorielle</dt><dd>${Math.round(c.genome.genes.vision)} u</dd><dt>Apprentissage</dt><dd>${c.genome.genes.learningRate.toFixed(2)}</dd><dt>Exploration</dt><dd>${Math.round(c.genome.genes.exploration * 100)} %</dd></dl>`;
+    `<dl class="gene-list"><dt>Stimulation</dt><dd>${c.needs.stimulation.toFixed(1)} %</dd><dt>Fatigue</dt><dd>${c.needs.fatigue.toFixed(1)} %</dd><dt>Stress</dt><dd>${c.needs.stress.toFixed(1)} %</dd><dt>Faim</dt><dd>${Math.round(hunger(m) * 100)} %</dd><dt>Contenu digestif</dt><dd>${m.stomach.toFixed(1)} / 36</dd><dt>Toxines</dt><dd>${m.toxins.toFixed(1)}</dd></dl>`;
+  const allGenes = { ...physiology(c.genome), ...c.genome.genes };
+  $("genes").insertAdjacentHTML(
+    "beforeend",
+    `<dl class="gene-list">${Object.entries(allGenes)
+      .map(
+        ([key, value]) =>
+          `<dt>${GENE_LABELS[key as keyof typeof allGenes]}</dt><dd>${value.toFixed(3)}</dd>`,
+      )
+      .join("")}</dl>`,
+  );
   $("journal").innerHTML =
     world.events
       .slice(-4)
@@ -329,7 +388,11 @@ $("world").addEventListener("pointerdown", (event) => {
     } else toast("Touchez un objet pour le retirer.");
   }
   sync();
-  renderer.draw(world, $<HTMLInputElement>("senses").checked);
+  renderer.draw(
+    world,
+    $<HTMLInputElement>("senses").checked,
+    activeProfile(laboratory).name,
+  );
 });
 $("scatter").addEventListener("click", () => {
   if (world.foods.length > MAX_FOODS - 3) return;
@@ -367,9 +430,26 @@ $("speed").addEventListener("click", () => {
 });
 $("inspect").addEventListener("click", () => setInspector(!inspector));
 $("close-inspector").addEventListener("click", () => setInspector(false));
+const labUI = createLaboratoryDialog(
+  () => laboratory,
+  () => {
+    world = activeProfile(laboratory).world;
+    accumulator = 0;
+    previous = performance.now();
+    sync();
+    save();
+    renderer.draw(
+      world,
+      inspector && $<HTMLInputElement>("senses").checked,
+      activeProfile(laboratory).name,
+    );
+  },
+);
+$("open-lab").addEventListener("click", () => labUI.open());
 const dialogs = [
   $<HTMLDialogElement>("help-dialog"),
   $<HTMLDialogElement>("save-dialog"),
+  labUI.dialog,
 ];
 function showDialog(id: string): void {
   $<HTMLInputElement>("seed").value = world.seed;
@@ -392,18 +472,42 @@ for (const dialog of dialogs)
 $("save-local").addEventListener("click", () => save(true));
 $("load-local").addEventListener("click", () => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-      toast("Aucune sauvegarde sur cet appareil.");
-      return;
+    const archived = localStorage.getItem(LAB_STORAGE_KEY);
+    if (archived) {
+      const next = deserializeLaboratory(archived);
+      laboratory = next;
+      world = activeProfile(laboratory).world;
+      accumulator = 0;
+      previous = performance.now();
+      sync();
+    } else {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        toast("Aucune sauvegarde sur cet appareil.");
+        return;
+      }
+      setWorld(deserialize(saved));
     }
-    setWorld(deserialize(saved));
-    toast("Jardin et mémoire restaurés.");
+    toast("Laboratoire et mémoires restaurés.");
     dialogs[1]!.close();
   } catch {
     toast("Impossible de charger cette sauvegarde. Le jardin est conservé.");
   }
 });
+$("export-lab").addEventListener("click", () => {
+  const url = URL.createObjectURL(
+    new Blob([serializeLaboratory(laboratory)], { type: "application/json" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "luma-laboratoire.json";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Laboratoire complet exporté.");
+});
+$("import-lab").addEventListener("click", () =>
+  $<HTMLInputElement>("file").click(),
+);
 $("export").addEventListener("click", () => {
   const url = URL.createObjectURL(
     new Blob([serialize(world)], { type: "application/json" }),
@@ -423,9 +527,24 @@ $<HTMLInputElement>("file").addEventListener("change", async (event) => {
   const file = input.files?.[0];
   if (!file) return;
   try {
-    if (file.size > 100_000) throw new Error();
-    const next = deserialize(await file.text());
-    setWorld(next);
+    if (file.size > MAX_LAB_BYTES) throw new Error();
+    const contents = await file.text();
+    const candidate: unknown = JSON.parse(contents);
+    if (
+      typeof candidate === "object" &&
+      candidate !== null &&
+      "kind" in candidate &&
+      candidate.kind === "luma-laboratory"
+    ) {
+      const next = deserializeLaboratory(contents);
+      laboratory = next;
+      world = activeProfile(laboratory).world;
+      accumulator = 0;
+      previous = performance.now();
+      sync();
+    } else {
+      setWorld(deserialize(contents));
+    }
     save();
     dialogs[1]!.close();
     toast("Jardin importé. Son histoire continue.");
@@ -436,7 +555,8 @@ $<HTMLInputElement>("file").addEventListener("change", async (event) => {
 });
 $("new-world").addEventListener("click", () => {
   const seed = $<HTMLInputElement>("seed").value.trim() || "luma-01";
-  setWorld(createWorld(seed));
+  setWorld(createWorld(seed, generateGenome(seed)));
+  activeProfile(laboratory).geneticSeed = seed;
   save();
   dialogs[1]!.close();
   toast("Milo découvre une nouvelle vie.");
@@ -463,7 +583,11 @@ function frame(now: number): void {
     }
     // Canvas 30 fps, simulation 10 Hz, DOM 4 Hz; no redraw work in hidden tabs.
     if (now >= nextRender) {
-      renderer.draw(world, inspector && $<HTMLInputElement>("senses").checked);
+      renderer.draw(
+        world,
+        inspector && $<HTMLInputElement>("senses").checked,
+        activeProfile(laboratory).name,
+      );
       nextRender = now + 1000 / 30;
     }
     if (now >= nextUi) {
