@@ -8,6 +8,8 @@ import {
   serializeLaboratory,
 } from "./lab/laboratory";
 import { createLaboratoryDialog } from "./ui/laboratory";
+import { createObservatoryPanel } from "./ui/observatory";
+import { LearningObservatory } from "./observatory/recorder";
 import { generateGenome, physiology, GENE_LABELS } from "./sim/genome";
 import { hunger } from "./sim/metabolism";
 import { motivations } from "./sim/curiosity";
@@ -108,6 +110,25 @@ let nextRender = 0;
 let toastTimer: ReturnType<typeof setTimeout>;
 let storageFailed = false;
 const renderer = new Renderer($<HTMLCanvasElement>("world"));
+const observatory = new LearningObservatory();
+const observatoryUI = createObservatoryPanel(() => laboratory, observatory);
+document.querySelector("main footer")!.before(observatoryUI.element);
+const observatoryButton = document.createElement("button");
+observatoryButton.id = "open-observatory";
+observatoryButton.textContent = "Observatoire de l’apprentissage";
+observatoryButton.setAttribute("aria-controls", "observatory");
+observatoryButton.setAttribute("aria-expanded", "false");
+observatoryButton.addEventListener("click", () => {
+  observatoryUI.open();
+  observatoryButton.setAttribute("aria-expanded", "true");
+});
+observatoryUI.element
+  .querySelector("#obs-close")!
+  .addEventListener("click", () => {
+    observatoryButton.setAttribute("aria-expanded", "false");
+    observatoryButton.focus({ preventScroll: true });
+  });
+document.querySelector(".laboratory-entry")!.after(observatoryButton);
 
 function toast(message: string): void {
   $("toast").textContent = message;
@@ -223,6 +244,7 @@ function sync(): void {
                     ? "Milo explore son jardin"
                     : "Milo savoure un peu de calme";
   $("status").textContent = state.replaceAll("Milo", () => individual.name);
+  observatoryUI.render();
   if (!inspector) return;
   $("age").textContent =
     `${Math.floor(seconds / 60)} min ${seconds % 60} s de vie`;
@@ -444,6 +466,7 @@ const labUI = createLaboratoryDialog(
       activeProfile(laboratory).name,
     );
   },
+  observatory,
 );
 $("open-lab").addEventListener("click", () => labUI.open());
 const dialogs = [
@@ -577,7 +600,7 @@ function frame(now: number): void {
     if (!paused && !dialogs.some((dialog) => dialog.open)) {
       accumulator += elapsed * speed;
       while (accumulator >= DT) {
-        step(world);
+        step(world, observatory.observerFor(world));
         accumulator -= DT;
       }
     }
