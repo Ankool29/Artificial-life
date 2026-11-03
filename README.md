@@ -34,6 +34,18 @@ Dans les recettes initiales, le carillon stimule avec un coût en fatigue et én
 
 [Conception et analyse du moteur existant](docs/curiosity.md) · [Aperçu ordinateur](docs/previews/curiosity-desktop.png) · [Aperçu Android portrait](docs/previews/curiosity-android-portrait.png)
 
+## Étape 3 : laboratoire de diversité individuelle
+
+**Ouvrir le laboratoire** permet de créer et conserver jusqu’à huit profils indépendants, puis de passer de l’un à l’autre. Un seul individu évolue ; les autres gardent exactement leur corps, leurs besoins, leur mémoire et leur terrain.
+
+Dans **Créer un individu**, saisir un nom, une **graine génétique** et une **graine de terrain**. Les treize paramètres biologiques des nouveaux génomes influencent réellement le moteur. Les noms ne définissent aucune personnalité ; les associations alimentaires et celles des objets commencent neutres. Un parent peut être choisi pour une transmission des gènes avec petites mutations reproductibles, sans héritage des souvenirs ni cohabitation.
+
+Pour comparer, **Mémoriser le terrain actif**, sélectionner successivement deux profils et **Créer un essai neuf** pour chacun. Les originaux restent conservés. Les essais repartent avec le même corps initial, les mêmes besoins et mémoires neutres, le même terrain et le même hasard environnemental, mais leur propre génome. **Avancer de 30 s** exécute exactement 300 ticks sur le seul profil actif. Le tableau et les détails affichent caractéristiques, besoins et associations de chaque individu.
+
+La sauvegarde locale et **Exporter le laboratoire** conservent toute la collection. L’export individuel reste disponible. Les anciennes sauvegardes deviennent un profil compatible ; leurs paramètres, préférences et mécanismes sont préservés avec des coefficients neutres pour les nouveaux traits.
+
+[Audit des gènes, protocole et compatibilité](docs/laboratory.md) · [Laboratoire sur ordinateur](docs/previews/laboratory-desktop.png) · [Laboratoire sur Android portrait](docs/previews/laboratory-android-portrait.png)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -50,7 +62,7 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | --- | --- |
 | `types.ts` | Contrats versionnés, unités de monde, pas fixe de 100 ms |
 | `random.ts` | Graine textuelle et générateur pseudo-aléatoire à état explicite |
-| `genome.ts` | Loci nommés : locomotion, portée sensorielle, assimilation, détoxification, plasticité, exploration |
+| `genome.ts` | Génomes v1/v2, treize loci exprimés, génération indépendante du terrain et transmission bornée |
 | `metabolism.ts` | Capacité digestive, absorption différée, énergie, faim, toxines, santé, renforcement interne |
 | `brain.ts` | Mémoire associative par signal sensoriel, règle delta |
 | `perception.ts` | Filtrage spatial ; la composition chimique n’est jamais exposée aux décisions |
@@ -61,15 +73,18 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | `persistence.ts` | JSON complet et validation structurelle des imports |
 | `src/ui/renderer.ts` | Dessin original et indépendant du hasard biologique |
 | `src/main.ts` | Contrôles, boucle d’horloge, interface biologique facultative et stockage |
+| `src/lab/laboratory.ts` | Profils indépendants, monde actif, terrains d’essai et archivage de la collection |
+| `src/ui/laboratory.ts` | Inspection des individus et expériences comparatives sans cohabitation |
 
 Voir [la conception détaillée](docs/architecture.md) pour les équations, compromis et pistes d’évolution.
 
 ## Sauvegardes et déterminisme
 
-- Sauvegarde automatique locale toutes les 15 secondes et au masquage/à la fermeture de la page. Restauration au prochain lancement, sans faire avancer le temps d’absence.
+- Sauvegarde automatique locale de tous les profils toutes les 15 secondes et au masquage/à la fermeture de la page, ainsi qu’après les actions du laboratoire. Restauration au prochain lancement, sans faire avancer le temps d’absence ou des profils inactifs.
 - Sauvegarde manuelle, chargement local, export et import JSON depuis l’icône en haut à droite. Les imports invalides conservent le jardin courant.
 - Le JSON conserve le génome, les bolus en cours de digestion, la mémoire, l’action, les échéances de décision et l’état du générateur.
 - Le format actuel est **v2**. Les sauvegardes **v1** sont migrées automatiquement : valeurs biologiques, préférences alimentaires, digestion, action, temps et hasard sont conservés ; les besoins et la mémoire des objets sont ajoutés sans tirage aléatoire. Les v2 conservent aussi les objets, leur récupération et une interaction en cours. La clé locale existante est conservée pour retrouver les jardins déjà sauvegardés.
+- Les nouveaux génomes sont versionnés v2 à l’intérieur des mondes ; les génomes v1 continuent d’utiliser leurs équations d’origine. L’archive complète du laboratoire possède son propre format versionné et conserve aussi les ascendants génétiques et les terrains initiaux des essais.
 - Une même graine **et la même séquence de commandes aux mêmes ticks** reproduisent l’évolution dans le même runtime. Le temps mural, la fréquence d’affichage et l’ouverture du panneau ne modifient pas la simulation.
 - L’onglet masqué et les dialogues suspendent la simulation. Pause et vitesse sont des préférences d’affichage, pas un état biologique sauvegardé.
 - Les fonctions trigonométriques peuvent différer de quelques bits entre moteurs JavaScript : une identité binaire entre moteurs différents n’est pas garantie.
@@ -89,7 +104,7 @@ Sur un système fournissant déjà Chromium : `CHROMIUM_PATH=/usr/bin/chromium n
 
 ## Périmètre du prototype
 
-Il s’agit d’un modèle biologique simplifié : pas encore de reproduction, mutation, réseaux neuronaux, population, microbiome ni sélection sur plusieurs générations. Le génome influence déjà les mécanismes ; il ne code pas des préférences alimentaires. Le cerveau est un système d’apprentissage associatif tabulaire, pas un réseau neuronal. Les aliments sont fixes dans ce monde, mais des compositions modifiées produisent d’autres associations sans modifier le cerveau.
+Il s’agit d’un modèle biologique simplifié : la transmission et les mutations sont contrôlées au laboratoire, sans reproduction autonome, cohabitation, réseaux neuronaux, population, microbiome ni sélection dans le terrarium. Le génome influence les mécanismes ; il ne code pas des préférences alimentaires ou d’objets. Le cerveau est un système d’apprentissage associatif tabulaire. Les aliments ont des recettes physiques ; des compositions ou physiologies différentes produisent d’autres associations sans modifier le cerveau.
 
 Calcul à 10 Hz, réévaluation habituelle des décisions toutes les 2 s (avec relance après une action), dessin plafonné à 30 images/s, mises à jour du panneau à 4 Hz, densité de pixels plafonnée à 2, 48 aliments et 12 objets maximum. La performance sur un appareil Android physique reste à mesurer.
 

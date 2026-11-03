@@ -12,7 +12,7 @@ Les points à préserver étaient :
 - Valeurs alimentaires initialement neutres et règle delta à la fin de la digestion.
 - Validation des sauvegardes v1, incluant contenu digestif, échéances d’action et hasard.
 
-L’exploration v1 était une destination de marche aléatoire, sans besoin de stimulation, objets ou apprentissage d’interaction. `metabolism.ts`, `brain.ts`, `genome.ts` et `random.ts` restent inchangés. Le choix de nourriture existant devient un candidat de l’arbitrage général ; ses seuils, scores et exploration aléatoire sont conservés. Les trajectoires futures peuvent changer parce que de nouvelles motivations existent, mais aucune préférence alimentaire acquise n’est réinitialisée.
+L’exploration v1 était une destination de marche aléatoire, sans besoin de stimulation, objets ou apprentissage d’interaction. Lors de cette étape 2, `metabolism.ts`, `brain.ts`, `genome.ts` et `random.ts` étaient restés inchangés. L’[étape 3](laboratory.md) étend ensuite les paramètres physiologiques en conservant les équations des anciens génomes. Le choix de nourriture devient un candidat de l’arbitrage général ; ses seuils, scores et exploration aléatoire sont conservés. Les trajectoires futures peuvent changer parce que de nouvelles motivations existent, mais aucune préférence alimentaire acquise n’est réinitialisée.
 
 ## Besoins internes et effets
 
