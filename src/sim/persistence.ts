@@ -1,5 +1,6 @@
 import { CUES, MAX_FOODS, MAX_OBJECTS, OBJECT_CUES, type World } from "./types";
 import { createNeeds, createObjectBrain, INTERACTION_TICKS } from "./curiosity";
+import { GENE_RANGES } from "./genome";
 
 const MAX_SAVE_BYTES = 100_000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -75,7 +76,12 @@ export function deserialize(json: string): World {
   )
     return invalid();
   const g = c.genome;
-  if (!isObject(g) || g.version !== 1 || !isObject(g.genes)) return invalid();
+  if (
+    !isObject(g) ||
+    (g.version !== 1 && g.version !== 2) ||
+    !isObject(g.genes)
+  )
+    return invalid();
   const ranges: Record<string, [number, number]> = {
     speed: [1, 150],
     vision: [10, 900],
@@ -89,6 +95,16 @@ export function deserialize(json: string): World {
       number((g.genes as Record<string, unknown>)[key], min, max),
     )
   )
+    return invalid();
+  if (
+    g.version === 2 &&
+    !Object.entries(GENE_RANGES).every(([key, [min, max]]) =>
+      number((g.genes as Record<string, unknown>)[key], min, max),
+    )
+  )
+    return invalid();
+  const allowedGenes = g.version === 2 ? GENE_RANGES : ranges;
+  if (!Object.keys(g.genes).every((key) => Object.hasOwn(allowedGenes, key)))
     return invalid();
   const m = c.metabolism;
   if (
@@ -223,6 +239,7 @@ export function deserialize(json: string): World {
 function validEffects(value: unknown): boolean {
   return (
     isObject(value) &&
+    Object.keys(value).length === 4 &&
     ["stimulation", "fatigue", "stress", "energy"].every((key) =>
       number(value[key], -100, 100),
     )

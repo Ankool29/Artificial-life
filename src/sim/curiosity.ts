@@ -1,4 +1,5 @@
 import { hunger } from "./metabolism";
+import { physiology } from "./genome";
 import {
   clamp,
   DT,
@@ -52,17 +53,23 @@ export function motivations(c: Creature): {
 
 export function updateNeeds(c: Creature, moving: boolean): void {
   const resting = c.action.kind === "rest";
+  const traits = physiology(c.genome);
   c.needs.stimulation = clamp(
-    c.needs.stimulation - (moving ? 0.16 : 0.36) * DT,
+    c.needs.stimulation - (moving ? 0.16 : 0.36) * DT * traits.stimulationDecay,
     0,
     100,
   );
   c.needs.fatigue = clamp(
-    c.needs.fatigue + (moving ? 0.32 : resting ? -0.8 : 0.12) * DT,
+    c.needs.fatigue +
+      (moving ? 0.32 : resting ? -0.8 * traits.recoveryRate : 0.12) * DT,
     0,
     100,
   );
-  c.needs.stress = clamp(c.needs.stress - (resting ? 0.25 : 0.12) * DT, 0, 100);
+  c.needs.stress = clamp(
+    c.needs.stress - (resting ? 0.25 * traits.recoveryRate : 0.12) * DT,
+    0,
+    100,
+  );
 }
 
 // Apply a physical dose and record measured changes after clamping. No cue is consulted.
@@ -71,10 +78,17 @@ export function applyObjectEffects(
   object: InteractiveObject,
   changes: ObjectEffects,
 ): void {
+  const traits = physiology(c.genome);
   for (const key of ["stimulation", "fatigue", "stress"] as const) {
     const before = c.needs[key];
+    const gain =
+      key === "stimulation"
+        ? traits.stimulusGain
+        : key === "stress"
+          ? traits.stressSensitivity
+          : 1;
     c.needs[key] = clamp(
-      before + object.effects[key] / INTERACTION_TICKS,
+      before + (object.effects[key] * gain) / INTERACTION_TICKS,
       0,
       100,
     );

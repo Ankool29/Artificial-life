@@ -44,7 +44,7 @@ export class Renderer {
     };
   }
 
-  draw(world: World, showSenses: boolean): void {
+  draw(world: World, showSenses: boolean, name = "Milo"): void {
     const ctx = this.ctx;
     ctx.setTransform(
       (this.dpr * this.width) / 600,
@@ -138,7 +138,7 @@ export class Renderer {
       this.object(object, active, object.availableAt > world.tick);
     }
     for (const food of world.foods) this.food(food.x, food.y, food.cue);
-    this.creature(world);
+    this.creature(world, name);
   }
 
   private object(
@@ -265,7 +265,7 @@ export class Renderer {
     ctx.stroke();
   }
 
-  private creature(world: World): void {
+  private creature(world: World, name: string): void {
     const ctx = this.ctx;
     const c = world.creature;
     const time = world.tick / 10;
@@ -329,7 +329,11 @@ export class Renderer {
     ctx.fillStyle = "#365b4c";
     ctx.font = "500 13px system-ui";
     ctx.textAlign = "center";
-    ctx.fillText("Milo", c.x, c.y + 49);
+    ctx.fillText(
+      name.length > 18 ? name.slice(0, 17) + "…" : name,
+      c.x,
+      c.y + 49,
+    );
   }
 
   destroy(): void {

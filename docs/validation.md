@@ -1,12 +1,12 @@
 # Validation du prototype
 
-Vérifications locales réalisées le 2 novembre 2026, Node.js 24.19.0.
+Vérifications locales de l’étape 3 réalisées le 3 novembre 2026, Node.js 24.19.0.
 
 | Vérification | Résultat |
 | --- | --- |
-| `npm test` | 43 tests réussis : 24 existants et 19 pour les interactions, motivations et migrations |
+| `npm test` | 65 tests réussis : 43 conservés et 22 sur diversité, hérédité, profils, expériences et compatibilité |
 | `npm run build` | TypeScript strict et bundle Vite réussis |
-| `CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e` | 14 scénarios réussis : 7 sur Pixel 7 émulé, 7 sur ordinateur |
+| `CHROMIUM_PATH=/usr/bin/chromium npm run test:e2e` | 20 scénarios réussis : 10 sur Pixel 7 émulé, 10 sur ordinateur |
 | Inspection des captures | Jardin, aliments et créature visibles ; pas de débordement horizontal ; palette proche du jardin en portrait |
 | `git diff --check` | Réussi |
 
@@ -25,10 +25,15 @@ Vérifications locales réalisées le 2 novembre 2026, Node.js 24.19.0.
 - Trois graines parcourent chacune 20 000 ticks, avec ajout périodique de nourriture, en conservant des états importables et bornés.
 - Les tests navigateur manipulent les contrôles réels : dépôt, ajout d’un trio, pause, accélération, panneau biologique, aide, export, import valide et invalide, chargement et restauration après rechargement de la page.
 - Les scénarios navigateur de l’étape 2 couvrent le placement/retrait d’objets, l’alternance avec les aliments, une interaction autonome avec souvenir persistant et l’import de la sauvegarde v1.
+- Les génomes sont reproductibles indépendamment du terrain ; tous les loci varient dans leurs bornes. Les descendants héritent de paramètres avec mutations limitées, sans souvenirs ni état interne.
+- Des génomes issus de graines réelles, soumis aux mêmes expériences, peuvent apprendre des bilans opposés pour le même aliment ou objet. Les tests contrôlent aussi un paramètre physiologique à la fois et distinguent les effets de l’histoire individuelle.
+- Les profils inactifs ne reçoivent aucun tick. Les essais neufs d’un même terrain partagent contenu physique, RNG et état initial, sans modifier leurs originaux.
+- Une sauvegarde v2 en cours d’interaction continue à l’identique pendant 300 ticks par comparaison avec un état de référence produit par le moteur de l’étape 2.
+- Les archives complètes du laboratoire, ascendance et terrains compris, sont validées et restaurées. Les tests navigateur vérifient création, changement de profil, avance exacte, essais comparatifs et export/import complet.
 
 ## Budget observé et limites
 
-Le bundle de production de l’étape 2 est d’environ **14 Ko de JavaScript gzip** et **5 Ko de CSS gzip**, hors polices facultatives. Aucun framework UI ou moteur physique n’est chargé. Le moteur et le rendu conservent leurs fréquences ; la perception parcourt au plus 48 aliments et 12 objets.
+Le bundle de production de l’étape 3 est d’environ **19 Ko de JavaScript gzip** et **5,4 Ko de CSS gzip**, hors polices facultatives. Aucun framework UI ou moteur physique n’est chargé. Le moteur et le rendu conservent leurs fréquences ; la perception parcourt au plus 48 aliments et 12 objets. Jusqu’à huit profils sont stockés, mais un seul monde reçoit des ticks.
 
 L’émulation Pixel 7 vérifie la mise en page et les interactions dans Chromium. Elle ne remplace pas une mesure de consommation, de batterie, de cadence d’images ou de comportement des téléchargements sur un appareil Android physique. Ces mesures restent à faire. Les rendus de référence sont dans `docs/previews/`.
 

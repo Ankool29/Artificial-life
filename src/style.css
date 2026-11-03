@@ -1296,3 +1296,213 @@ dialog > p {
     transform: scale(0.8);
   }
 }
+
+.laboratory-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: -8px 0 20px;
+  font-size: 11px;
+  color: #76856c;
+}
+.laboratory-entry > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.laboratory-entry button {
+  border: 1px solid #cbd8bc;
+  border-radius: 9px;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 11px;
+  background: #edf2e3;
+  white-space: nowrap;
+}
+.laboratory-entry button:hover {
+  background: #e1ebd3;
+}
+#lab-dialog {
+  width: min(960px, calc(100vw - 28px));
+  padding: 28px;
+  max-height: 93dvh;
+}
+#lab-dialog > p {
+  max-width: 680px;
+}
+.lab-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.5fr);
+  gap: 26px;
+  align-items: start;
+}
+.lab-controls {
+  padding: 20px;
+  background: #edf1e4;
+  border-radius: 12px;
+}
+.lab-controls label {
+  display: block;
+  font-size: 11px;
+  color: #718066;
+  margin: 12px 0 7px;
+}
+.lab-controls input,
+.lab-controls select {
+  width: 100%;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid #d0dcc2;
+  border-radius: 7px;
+  background: #fcfdf7;
+  color: #2c513e;
+  font-size: 12px;
+}
+.lab-controls form {
+  border-top: 1px solid #d6e0c9;
+  padding-top: 18px;
+  margin-top: 20px;
+}
+.lab-controls .save-actions {
+  margin: 12px 0;
+}
+.lab-controls .primary-button {
+  margin-top: 14px;
+}
+.lab-details {
+  padding: 5px 0;
+}
+.lab-details .lab-profile-name {
+  font-family: Manrope, system-ui, sans-serif;
+  font-size: 25px;
+  overflow-wrap: anywhere;
+  margin: 8px 0 16px;
+}
+.lab-details h3 {
+  margin: 22px 0 10px;
+}
+.lab-details .gene-list {
+  font-size: 11px;
+  gap: 7px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.lab-details dd {
+  overflow-wrap: anywhere;
+}
+.lab-details details {
+  border-top: 1px solid #dbe3d0;
+  border-bottom: 1px solid #dbe3d0;
+  padding: 10px 0;
+  margin-top: 18px;
+}
+.lab-details summary {
+  font-size: 11px;
+  line-height: 1.8;
+}
+.lab-association {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e7ecde;
+  padding: 9px 0;
+  font-size: 11px;
+}
+.lab-association > span:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #6e825c;
+}
+.lab-experiments {
+  margin-top: 26px;
+  border-top: 1px solid #d6e0cb;
+  padding-top: 24px;
+}
+.lab-experiments > h3 {
+  font-size: 16px;
+}
+.lab-experiments .save-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0 20px;
+}
+#lab-message {
+  font-size: 12px;
+  color: #6c805b;
+  min-height: 20px;
+  margin: 8px 0;
+}
+.lab-table-wrap {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid #d6e1c9;
+  border-radius: 10px;
+}
+.lab-table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 10px;
+  min-width: 650px;
+}
+.lab-table-wrap caption {
+  text-align: left;
+  padding: 12px;
+  background: #e9efdf;
+  font-size: 11px;
+}
+.lab-table-wrap th,
+.lab-table-wrap td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #dde6d1;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.lab-table-wrap th {
+  font-weight: 550;
+}
+.lab-table-wrap th small {
+  display: block;
+  font-size: 8px;
+  color: #8c9980;
+  margin-top: 5px;
+}
+@media (max-width: 620px) {
+  .laboratory-entry {
+    font-size: 9px;
+    margin: -8px 0 16px;
+  }
+  .laboratory-entry button {
+    font-size: 10px;
+    padding: 9px 11px;
+  }
+  #lab-dialog {
+    padding: 20px;
+    max-height: 94dvh;
+  }
+  .lab-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+  .lab-controls {
+    padding: 17px;
+  }
+  .lab-details .gene-list {
+    font-size: 11px;
+  }
+  .lab-experiments .save-actions {
+    grid-template-columns: 1fr;
+  }
+  .lab-association {
+    font-size: 10px;
+  }
+  .lab-details .eyebrow {
+    font-size: 9px;
+  }
+  .lab-details details summary {
+    min-height: 44px;
+    padding: 8px 0;
+  }
+  .lab-table-wrap table {
+    font-size: 9px;
+  }
+}

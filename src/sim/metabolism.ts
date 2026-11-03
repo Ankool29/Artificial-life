@@ -6,6 +6,7 @@ import {
   type Genome,
   type Metabolism,
 } from "./types";
+import { physiology } from "./genome";
 
 export function hunger(m: Metabolism): number {
   return clamp(1 - m.energy / 100) * (1 - 0.7 * clamp(m.stomach / 36));
@@ -33,9 +34,17 @@ export function metabolize(
   moving: boolean,
 ): Outcome[] {
   const outcomes: Outcome[] = [];
-  m.energy = clamp(m.energy - (0.32 + (moving ? 0.18 : 0)) * DT, 0, 100);
+  const traits = physiology(genome);
+  const locomotion = genome.version === 2 ? genome.genes.speed / 38 : 1;
+  m.energy = clamp(
+    m.energy -
+      (0.32 + (moving ? 0.18 * locomotion : 0)) * DT * traits.metabolicRate,
+    0,
+    100,
+  );
   // Finite enzyme throughput shared across the gut; each meal takes several seconds.
-  const throughput = (2.4 * DT) / Math.max(1, m.gut.length);
+  const throughput =
+    (2.4 * DT * traits.digestionRate) / Math.max(1, m.gut.length);
   for (const bolus of m.gut) {
     const amount = Math.min(throughput, bolus.remaining);
     const fraction = amount / bolus.remaining;
@@ -45,7 +54,11 @@ export function metabolize(
     const previousHealth = m.health;
     m.energy = clamp(m.energy + nutrients * genome.genes.efficiency, 0, 100);
     m.toxins = clamp(m.toxins + absorbedToxin, 0, 100);
-    m.health = clamp(m.health - absorbedToxin * 1.8, 0, 100);
+    m.health = clamp(
+      m.health - absorbedToxin * 1.8 * traits.toxinSensitivity,
+      0,
+      100,
+    );
     // Reinforcement from actual internal changes, never from a food's category.
     bolus.reward +=
       (m.energy - previousEnergy) / 25 + (m.health - previousHealth) / 14;

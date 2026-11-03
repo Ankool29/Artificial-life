@@ -1,0 +1,123 @@
+{
+  "version": 2,
+  "seed": "legacy-v2-lab",
+  "rng": 3388679200,
+  "tick": 312,
+  "nextId": 14,
+  "width": 600,
+  "height": 680,
+  "foods": [],
+  "objects": [
+    {
+      "id": 13,
+      "cue": "prism",
+      "x": 300,
+      "y": 340,
+      "effects": {
+        "stimulation": 36,
+        "fatigue": 18,
+        "stress": 28,
+        "energy": -3
+      },
+      "availableAt": 110
+    }
+  ],
+  "events": [
+    {
+      "tick": 30,
+      "kind": "interaction",
+      "objectCue": "prism",
+      "value": -0.7533333333333254
+    }
+  ],
+  "creature": {
+    "x": 277.8136513154655,
+    "y": 260.66996330134543,
+    "heading": -2.9233862490424154,
+    "genome": {
+      "version": 1,
+      "genes": {
+        "speed": 36.58409936539829,
+        "vision": 195.0965889764484,
+        "efficiency": 0.9150835739332251,
+        "detox": 0.658337143715471,
+        "learningRate": 0.3800454399921,
+        "exploration": 0.12
+      }
+    },
+    "metabolism": {
+      "energy": 81.42200000000125,
+      "stomach": 0,
+      "toxins": 0,
+      "health": 100,
+      "gut": []
+    },
+    "brain": {
+      "amber": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "blue": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "rose": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      }
+    },
+    "needs": {
+      "stimulation": 65.42799999999953,
+      "fatigue": 9.496000000000295,
+      "stress": 26.019000000000332
+    },
+    "objectBrain": {
+      "chime": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "moss": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "prism": {
+        "value": -0.28630089812737897,
+        "interactions": 1,
+        "lastReward": -0.7533333333333254,
+        "expected": {
+          "stimulation": 13.681635839715632,
+          "fatigue": 6.84081791985781,
+          "stress": 10.641272319778802,
+          "energy": -1.140136319976235
+        }
+      }
+    },
+    "action": {
+      "kind": "wander",
+      "target": {
+        "x": 94.21346771065146,
+        "y": 219.95902973227203
+      }
+    },
+    "nextDecision": 320,
+    "meals": 0,
+    "alive": true
+  }
+}

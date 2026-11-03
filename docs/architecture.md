@@ -29,9 +29,9 @@ Le moteur reçoit uniquement des ticks et des commandes explicites. Il ne lit au
 
 ## Génétique
 
-Un génome versionné contient des loci nommés. À la création, une variation déterministe produit les valeurs du phénotype. Ces valeurs gouvernent réellement vitesse, perception, assimilation, détoxification et apprentissage. L’exploration a pour le moment la même valeur pour toutes les naissances. Aucun locus ne dit quel aliment apprécier.
+Un génome versionné contient des loci nommés. Les anciens génomes v1 conservent leur fonctionnement. Les nouveaux génomes v2 du laboratoire possèdent treize paramètres exprimés : locomotion, perception, assimilation, détoxification, plasticité, exploration alimentaire, dépense métabolique, débit digestif, sensibilité aux toxines, réponse aux stimuli, réactivité au stress, récupération et perte de stimulation. Aucun locus ne dit quel aliment ou objet apprécier.
 
-Ce format permet d’ajouter des récepteurs sensoriels, enzymes ou paramètres de plasticité. La reproduction et les mutations devront introduire des règles de transmission et de bornage, puis une migration du format de sauvegarde. Elles ne sont pas simulées dans ce prototype.
+La graine génétique est indépendante du terrain. Une transmission asexuée avec petites mutations bornées peut être demandée au laboratoire, sans transmettre les besoins ou les apprentissages. Elle ne crée aucune cohabitation ou reproduction autonome. Voir [l’audit et le laboratoire](laboratory.md) pour les intervalles, mécanismes, sauvegardes et protocoles de comparaison.
 
 ## Métabolisme
 
@@ -77,4 +77,4 @@ Avec une créature, au maximum 48 aliments et 12 objets, un parcours linéaire d
 
 Le format JSON v2 contient uniquement des données. L’import borne la taille et le nombre d’objets, vérifie valeurs finies, plages, références, identifiants uniques et cohérence du volume digestif. Les sauvegardes v1 sont d’abord validées avec leurs contraintes d’origine puis migrées sans modifier leurs champs biologiques, leur mémoire alimentaire ou leur générateur aléatoire. Les objets, besoins et traces d’interaction v2 sont validés séparément. Les versions inconnues sont rejetées. Un ancien moteur v1 ne sait pas relire les nouveaux exports v2.
 
-Les prochaines extensions proposées sont : séparation des gènes et du phénotype recalculé ; récepteurs et signaux plus riches ; métabolites à cinétique propre ; boucles de récompense fondées sur des neuromodulateurs ; reproduction et hérédité ; comparaison de plusieurs graines et générations. Chacune doit maintenir les tests de replay et de reprise exacte.
+Une enveloppe d’archive distincte conserve les profils du laboratoire et leurs terrains d’essai. Seul le monde actif reçoit des ticks. Les prochaines extensions possibles sont : récepteurs et signaux plus riches ; métabolites à cinétique propre ; boucles de récompense fondées sur des neuromodulateurs ; reproduction autonome et sélection. Chacune doit maintenir les tests de replay et de reprise exacte.
