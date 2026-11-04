@@ -64,6 +64,12 @@ Sur la cohorte publiée de 24 graines, les sondes après acquisition bénéfique
 
 [Mécanisme accessible, protocole, résultats et limites](docs/instrumental-learning.md) · [Données mesurées](docs/research/instrumental-results.json)
 
+## Étape 4.2 : attribution des conséquences
+
+Les liens entre action, ressource et digestion sont conservés indépendamment des épisodes récents. Les apparitions simultanées peuvent exclure une hypothèse ; les ambiguïtés impossibles à résoudre restent sans crédit biologique. L’observatoire affiche ces traces et distingue les bilans partiels à l’arrêt de vie. Les anciennes sauvegardes sont migrées sans modifier les gènes ou les associations alimentaires.
+
+[Explication et compatibilité](docs/consequence-attribution.md) · [Comparaison ancien/nouveau, données et limites](docs/research/consequence-attribution-study.md)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.

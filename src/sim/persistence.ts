@@ -2,6 +2,7 @@ import { CUES, MAX_FOODS, MAX_OBJECTS, OBJECT_CUES, type World } from "./types";
 import { createNeeds, createObjectBrain, INTERACTION_TICKS } from "./curiosity";
 import { GENE_RANGES } from "./genome";
 import { validInstrumental } from "./instrumental-persistence";
+import { migrateInstrumental } from "./instrumental-migration";
 
 const MAX_SAVE_BYTES = 100_000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -113,8 +114,9 @@ export function deserialize(json: string): World {
     !number(m.health, 0, 100) ||
     !["energy", "toxins"].every((key) => number(m[key], 0, 100)) ||
     !number(m.stomach, 0, 36.000001) ||
-    !Array.isArray(m.gut) ||
-    m.gut.length > 4
+    // Partially digested meals can overlap beyond four slots. The overall save
+    // size limit bounds imports; stomach mass is validated independently below.
+    !Array.isArray(m.gut)
   )
     return invalid();
   if (
@@ -243,6 +245,7 @@ export function deserialize(json: string): World {
     (legacy || !validInstrumental(w.instrumental, w as unknown as World))
   )
     return invalid();
+  migrateInstrumental(w as unknown as World);
   return w as unknown as World;
 }
 

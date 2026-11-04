@@ -11,7 +11,7 @@ export function createInstrumentalState(
   learning = true,
 ): InstrumentalState {
   return {
-    version: 1,
+    version: 2,
     learning,
     devices: [],
     memories: [],
@@ -20,6 +20,9 @@ export function createInstrumentalState(
     gut: world.creature.metabolism.gut.map(() => ({
       episodeId: null,
       foodId: null,
+      hypotheses: [],
+      observedTick: null,
+      bound: false,
     })),
     seenFoods: world.foods
       .filter(

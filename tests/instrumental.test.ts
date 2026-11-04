@@ -182,7 +182,12 @@ describe("perception and temporal attribution", () => {
       x: 350,
       y: 340,
     });
-    expect(w.instrumental!.links).toEqual([]);
+    expect(w.instrumental!.links).toHaveLength(1);
+    expect(w.instrumental!.links[0]).toMatchObject({
+      bound: false,
+      episodeId: null,
+    });
+    expect(w.instrumental!.links[0]!.hypotheses).toHaveLength(2);
     expect(
       w.instrumental!.memories.every(
         (m) => m.probability === 0 && m.value === 0,

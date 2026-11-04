@@ -1,5 +1,7 @@
 # Étape 4 — apprendre les conséquences d’une action
 
+L’[étape 4.2](consequence-attribution.md) remplace désormais la conservation temporelle et le traitement des ambiguïtés décrits ici. Ce document et `instrumental-results.json` conservent le protocole et les résultats historiques de l’étape 4 ; le [rapport comparatif](research/consequence-attribution-study.md) et `instrumental-attribution-results.json` décrivent les mesures du nouveau moteur. Les règles alimentaires, génétiques et des objets restent inchangées.
+
 Cette étape met en œuvre une mémoire instrumentale limitée, guidée par le [rapport C3/DS](research/creatures3-engine-study.md) et le [contrat de l’observatoire](learning-observatory.md). Elle n’ajoute ni réseau neuronal, ni observation des actions du joueur, ni système social.
 
 ## Explication accessible

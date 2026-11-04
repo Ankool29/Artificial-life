@@ -1,5 +1,7 @@
 # Observatoire de l’apprentissage — étape 3.5
 
+L’[étape 4.2](consequence-attribution.md#observatoire) ajoute les hypothèses d’attribution réellement conservées et distingue les bilans instrumentaux achevés des absorptions partielles à l’arrêt de vie. Elle ne transforme pas une association en preuve de provenance physique.
+
 L’[étape 4](instrumental-learning.md) étend désormais cet observatoire aux actions instrumentales. Les faits de production, les événements perçus et les relations estimées y sont séparés. Les modèles cognitifs sont sauvegardés, tandis que les séries de diagnostic restent bornées en mémoire. Les garanties ci-dessous décrivent l’instrumentation initiale, conservée pour les aliments et objets existants.
 
 Cette étape applique l’instrumentation recommandée dans le [rapport C3/DS](research/creatures3-engine-study.md#8-feuille-de-route-progressive). Elle n’introduit ni apprentissage causal, ni distributrice, ni nouvelle règle biologique ou cognitive.

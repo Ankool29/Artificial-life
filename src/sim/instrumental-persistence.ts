@@ -4,6 +4,9 @@ import {
   MAX_EPISODES,
   MAX_LINKS,
   MAX_TRANSITIONS,
+  MAX_HYPOTHESES,
+  MAX_GUT_CREDITS,
+  EVENT_WINDOW,
 } from "./instrumental-types";
 
 const object = (x: unknown): x is Record<string, unknown> =>
@@ -22,14 +25,16 @@ const point = (x: Record<string, unknown>): boolean =>
 export function validInstrumental(raw: unknown, world: World): boolean {
   if (
     !object(raw) ||
-    raw.version !== 1 ||
+    (raw.version !== 1 && raw.version !== 2) ||
     typeof raw.learning !== "boolean" ||
     !int(raw.nextEpisode, 1, 1e10) ||
+    (raw.uncertainUntil !== undefined &&
+      !int(raw.uncertainUntil, 0, world.tick + EVENT_WINDOW)) ||
     !array(raw.devices, MAX_DEVICES) ||
     !array(raw.memories, MAX_TRANSITIONS) ||
     !array(raw.episodes, MAX_EPISODES) ||
-    !array(raw.links, MAX_LINKS) ||
-    !array(raw.gut, 4) ||
+    !array(raw.links, raw.version === 1 ? 24 : MAX_LINKS) ||
+    !array(raw.gut, world.creature.metabolism.gut.length) ||
     !array(raw.seenFoods, MAX_FOODS) ||
     raw.gut.length !== world.creature.metabolism.gut.length
   )
@@ -82,6 +87,15 @@ export function validInstrumental(raw: unknown, world: World): boolean {
   )
     return false;
   if (
+    !raw.memories.every(
+      (m) =>
+        object(m) &&
+        (m.partialOutcomes === undefined ||
+          int(m.partialOutcomes, 0, m.outcomes as number)),
+    )
+  )
+    return false;
+  if (
     new Set(
       raw.memories.map(
         (m) =>
@@ -100,19 +114,55 @@ export function validInstrumental(raw: unknown, world: World): boolean {
         situation(e.situation) &&
         int(e.tick, 0, world.tick) &&
         typeof e.covered === "boolean" &&
-        typeof e.eventSeen === "boolean",
+        typeof e.eventSeen === "boolean" &&
+        (e.conflicted === undefined || typeof e.conflicted === "boolean"),
     )
   )
     return false;
   const episodes = new Set(raw.episodes.map((e) => (e as { id: number }).id));
   if (episodes.size !== raw.episodes.length) return false;
+  const attribution = (r: Record<string, unknown>): boolean => {
+    if (
+      !array(r.hypotheses, MAX_HYPOTHESES) ||
+      typeof r.bound !== "boolean" ||
+      (r.observedTick !== null && !int(r.observedTick, 0, world.tick)) ||
+      (r.conflicted !== undefined && typeof r.conflicted !== "boolean") ||
+      (r.settled !== undefined &&
+        (typeof r.settled !== "boolean" || (r.settled && world.creature.alive)))
+    )
+      return false;
+    const hs = r.hypotheses;
+    if (
+      !hs.every(
+        (h) =>
+          object(h) &&
+          id(h.targetId) &&
+          int(h.episodeId, 1, (raw.nextEpisode as number) - 1) &&
+          situation(h.situation) &&
+          int(h.actionTick, 0, (r.observedTick ?? world.tick) as number),
+      )
+    )
+      return false;
+    if (
+      new Set(hs.map((h) => (h as { episodeId: number }).episodeId)).size !==
+      hs.length
+    )
+      return false;
+    return r.bound
+      ? hs.length === 1 &&
+          !r.conflicted &&
+          r.episodeId === (hs[0] as { episodeId: number }).episodeId
+      : r.episodeId === null;
+  };
   if (
     !raw.links.every(
       (link) =>
         object(link) &&
         id(link.foodId) &&
-        int(link.episodeId, 1, (raw.nextEpisode as number) - 1) &&
-        episodes.has(link.episodeId) &&
+        (raw.version === 1
+          ? int(link.episodeId, 1, (raw.nextEpisode as number) - 1) &&
+            episodes.has(link.episodeId)
+          : attribution(link) && link.observedTick === link.tick) &&
         int(link.tick, 0, world.tick),
     )
   )
@@ -127,12 +177,44 @@ export function validInstrumental(raw: unknown, world: World): boolean {
       (g) =>
         object(g) &&
         (g.foodId === null || id(g.foodId)) &&
-        (g.episodeId === null ||
-          (int(g.episodeId, 1, (raw.nextEpisode as number) - 1) &&
-            episodes.has(g.episodeId))),
+        (raw.version === 2
+          ? attribution(g)
+          : g.episodeId === null ||
+            (int(g.episodeId, 1, (raw.nextEpisode as number) - 1) &&
+              episodes.has(g.episodeId))),
     )
   )
     return false;
+  if (raw.version === 2) {
+    if (
+      (raw.gut as Record<string, unknown>[]).filter(
+        (r) => (r.hypotheses as unknown[]).length > 0,
+      ).length > MAX_GUT_CREDITS
+    )
+      return false;
+    const identities = new Map<number, string>();
+    for (const e of raw.episodes as Record<string, unknown>[]) {
+      identities.set(e.id as number, `${e.targetId}/${e.situation}/${e.tick}`);
+    }
+    const claimed = new Set<number>(),
+      foods = new Set<number>();
+    for (const r of [...raw.links, ...raw.gut] as Record<string, unknown>[]) {
+      if (r.foodId !== null) {
+        if (foods.has(r.foodId as number)) return false;
+        foods.add(r.foodId as number);
+      }
+      for (const h of r.hypotheses as Record<string, unknown>[]) {
+        const key = `${h.targetId}/${h.situation}/${h.actionTick}`;
+        const before = identities.get(h.episodeId as number);
+        if (before !== undefined && before !== key) return false;
+        identities.set(h.episodeId as number, key);
+      }
+      if (r.bound) {
+        if (claimed.has(r.episodeId as number)) return false;
+        claimed.add(r.episodeId as number);
+      }
+    }
+  }
   return (
     raw.seenFoods.every(id) &&
     new Set(raw.seenFoods).size === raw.seenFoods.length
