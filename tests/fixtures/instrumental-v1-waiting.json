@@ -1,0 +1,173 @@
+{
+  "version": 2,
+  "seed": "legacy-attribution",
+  "rng": 372982663,
+  "tick": 17,
+  "nextId": 15,
+  "width": 600,
+  "height": 680,
+  "foods": [
+    {
+      "id": 14,
+      "x": 357,
+      "y": 340,
+      "cue": "amber",
+      "mass": 10,
+      "nutrients": 28,
+      "toxins": 0
+    }
+  ],
+  "objects": [],
+  "events": [],
+  "creature": {
+    "x": 327.3383650138976,
+    "y": 340,
+    "heading": 0,
+    "genome": {
+      "version": 1,
+      "genes": {
+        "speed": 34.172956267371774,
+        "vision": 213.7738486204762,
+        "efficiency": 0.9726864196010865,
+        "detox": 0.6628101455513388,
+        "learningRate": 0.36946182752028106,
+        "exploration": 0.12
+      }
+    },
+    "metabolism": {
+      "energy": 51.312000000000054,
+      "stomach": 0,
+      "toxins": 0,
+      "health": 100,
+      "gut": []
+    },
+    "brain": {
+      "amber": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "blue": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      },
+      "rose": {
+        "value": 0,
+        "meals": 0,
+        "lastReward": 0
+      }
+    },
+    "needs": {
+      "stimulation": 39.548,
+      "fatigue": 9.536,
+      "stress": 4.679
+    },
+    "objectBrain": {
+      "chime": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "moss": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      },
+      "prism": {
+        "value": 0,
+        "interactions": 0,
+        "lastReward": 0,
+        "expected": {
+          "stimulation": 0,
+          "fatigue": 0,
+          "stress": 0,
+          "energy": 0
+        }
+      }
+    },
+    "action": {
+      "kind": "rest"
+    },
+    "nextDecision": 19,
+    "meals": 0,
+    "alive": true
+  },
+  "instrumental": {
+    "version": 1,
+    "learning": true,
+    "devices": [
+      {
+        "id": 13,
+        "kind": "dispenser",
+        "appearance": "lever",
+        "x": 335,
+        "y": 340,
+        "stock": 11,
+        "capacity": 12,
+        "readyAt": 89,
+        "rechargeTicks": 80,
+        "delayTicks": 8,
+        "pressedUntil": 12,
+        "pendingAt": null,
+        "recipe": {
+          "cue": "amber",
+          "mass": 10,
+          "nutrients": 28,
+          "toxins": 0
+        }
+      }
+    ],
+    "memories": [
+      {
+        "targetId": 13,
+        "situation": "clear",
+        "action": "press",
+        "attempts": 1,
+        "observations": 1,
+        "successes": 1,
+        "probability": 0.36946182752028106,
+        "value": 0,
+        "outcomes": 0,
+        "lastReward": 0,
+        "lastTick": 17
+      }
+    ],
+    "episodes": [
+      {
+        "id": 1,
+        "targetId": 13,
+        "situation": "clear",
+        "tick": 9,
+        "x": 335,
+        "y": 340,
+        "covered": true,
+        "eventSeen": true
+      }
+    ],
+    "links": [
+      {
+        "foodId": 14,
+        "episodeId": 1,
+        "tick": 17
+      }
+    ],
+    "gut": [],
+    "seenFoods": [
+      14
+    ],
+    "nextEpisode": 2
+  }
+}

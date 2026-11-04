@@ -285,6 +285,7 @@ export class LearningObservatory {
           perceived: "Événement perçu par la créature",
           transition: "Estimation action → ressource",
           credit: "Crédit biologique différé",
+          attribution: "Hypothèses d’attribution perceptive",
           score: "Score instrumental effectivement calculé",
         };
         append(
@@ -305,7 +306,13 @@ export class LearningObservatory {
             ...(t.reward === undefined
               ? []
               : [
-                  `Bilan réellement digéré ${signed(t.reward)} ; éligibilité temporelle ${t.eligibility!.toFixed(3)}.`,
+                  `${t.outcome === "terminal-partial" ? "Bilan partiel absorbé avant arrêt" : "Bilan réellement digéré"} ${signed(t.reward)}${t.eligibility === undefined ? " ; aucune attribution retenue" : ` ; éligibilité à l’apparition ${t.eligibility.toFixed(3)}`}.`,
+                ]),
+            ...(t.hypotheses === undefined
+              ? []
+              : [
+                  `Actions propres compatibles : ${t.hypotheses.map((h) => `#${h.targetId}, action au tick ${h.actionTick}`).join(" ; ") || "aucune"}.`,
+                  "Une hypothèse compatible n’est pas une preuve de provenance physique.",
                 ]),
             ...(t.score === undefined
               ? []

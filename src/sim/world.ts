@@ -21,6 +21,8 @@ import {
   beginAction,
   newlyPerceivedResources,
   observeChange,
+  observeResources,
+  settleTerminalCredits,
   perceiveActuators,
   perceiveChange,
   registerIngestion,
@@ -28,6 +30,7 @@ import {
   updateEpisodes,
 } from "./instrumental";
 import type { GutCredit, InstrumentalTrace } from "./instrumental-types";
+import { migrateInstrumental } from "./instrumental-migration";
 import {
   clamp,
   CUES,
@@ -123,6 +126,7 @@ function event(world: World, data: Omit<WorldEvent, "tick">): void {
 export function step(world: World, observe?: SimulationObserver): void {
   const c = world.creature;
   if (!c.alive) return;
+  migrateInstrumental(world);
   world.tick++;
   const instrumentalObserver = observe
     ? (trace: InstrumentalTrace) =>
@@ -138,11 +142,11 @@ export function step(world: World, observe?: SimulationObserver): void {
       });
   }
   if (world.instrumental) {
-    for (const change of newlyPerceivedResources(
+    observeResources(
       world,
-      perceive(c, world.foods),
-    ))
-      observeChange(world, change, instrumentalObserver);
+      newlyPerceivedResources(world, perceive(c, world.foods)),
+      instrumentalObserver,
+    );
   }
   if (world.tick >= c.nextDecision && c.action.kind !== "interact") {
     c.action = decide(
@@ -205,7 +209,7 @@ export function step(world: World, observe?: SimulationObserver): void {
         if (food && ingest(c.metabolism, food)) {
           world.foods = world.foods.filter((item) => item.id !== id);
           c.meals++;
-          registerIngestion(world, food.id);
+          registerIngestion(world, food.id, instrumentalObserver);
           event(world, { kind: "meal", cue: food.cue });
           observe?.({ kind: "ingestion", tick: world.tick, food: { ...food } });
         }
@@ -333,6 +337,7 @@ export function step(world: World, observe?: SimulationObserver): void {
     }
   }
   if (c.metabolism.health <= 0) {
+    settleTerminalCredits(world, instrumentalObserver);
     c.alive = false;
     c.action = { kind: "rest" };
     event(world, { kind: "death" });

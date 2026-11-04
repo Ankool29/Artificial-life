@@ -13,7 +13,20 @@ export function instrumentalMarkup(
   if (!s?.devices.length)
     return '<p class="microcopy">Placez une distributrice depuis la palette Objets pour observer les essais de Luma.</p>';
   const perceived = session?.lastDecision?.actuators ?? [];
-  return `<p class="microcopy">Luma essaie des actions par curiosité. Une nouvelle baie aperçue après son action peut former une association temporelle. Seule sa digestion apprend la valeur biologique. Ce mécanisme n’établit pas une preuve de causalité.</p>${!s.learning ? '<p class="instrumental-summary">Témoin : apprentissage instrumental désactivé. La physiologie et l’apprentissage alimentaire continuent.</p>' : ""}<p class="microcopy">Leviers perçus à la dernière décision capturée (tick ${session?.lastDecision?.tick ?? "—"}) : ${perceived.map((a) => `#${a.id}, distance ${a.distance.toFixed(1)}`).join(" ; ") || "aucun instantané disponible"}.</p>${s.devices
+  const chains = [
+    ...s.links.map((r) => ({ r, stage: "Ressource" })),
+    ...s.gut.map((r) => ({ r, stage: "Digestion" })),
+  ];
+  const evidence = `<details class="attribution-evidence"><summary>Chaînes observées et ambiguïtés (${chains.length})</summary><p class="microcopy">Les actions compatibles viennent de la proximité et de la séquence observées. Une action explique au plus une apparition. Plusieurs hypothèses ou un conflit restent sans crédit biologique : ce n’est pas une preuve de provenance. Une trace liée à une ressource persiste jusqu’à son ingestion, puis avec sa digestion. Les 24 dernières chaînes sont affichées ; cette limite de présentation ne retire aucune trace du moteur.</p><div class="observatory-table-wrap"><table><caption>Hypothèses réellement conservées par le moteur</caption><thead><tr><th>Étape / aliment</th><th>Actions compatibles</th><th>Attribution</th></tr></thead><tbody>${
+    chains
+      .slice(-24)
+      .map(
+        ({ r, stage }) =>
+          `<tr><td>${stage} #${r.foodId ?? "inconnu"}</td><td>${(r.hypotheses ?? []).map((h) => `#${h.targetId} · tick ${h.actionTick}`).join(" ; ") || "Aucune"}</td><td>${r.bound ? "Une action compatible" : r.conflicted ? "Conflit : attribution suspendue" : (r.hypotheses?.length ?? 0) > 1 ? "Ambiguïté conservée" : "Non attribuée"}</td></tr>`,
+      )
+      .join("") || '<tr><td colspan="3">Aucune chaîne en cours.</td></tr>'
+  }</tbody></table></div></details>`;
+  return `<p class="microcopy">Luma essaie des actions par curiosité. Une nouvelle baie aperçue après son action peut former une association temporelle. Les changements biologiques absorbés apprennent sa valeur à la fin de la digestion, ou par un bilan partiel si la vie s’arrête. Ce mécanisme n’établit pas une preuve de causalité.</p>${!s.learning ? '<p class="instrumental-summary">Témoin : apprentissage instrumental désactivé. La physiologie et l’apprentissage alimentaire continuent.</p>' : ""}<p class="microcopy">Leviers perçus à la dernière décision capturée (tick ${session?.lastDecision?.tick ?? "—"}) : ${perceived.map((a) => `#${a.id}, distance ${a.distance.toFixed(1)}`).join(" ; ") || "aucun instantané disponible"}.</p>${s.devices
     .map((d) => {
       const memories = s.memories.filter((m) => m.targetId === d.id);
       const attempts = memories.reduce((sum, m) => sum + m.attempts, 0),
@@ -21,8 +34,12 @@ export function instrumentalMarkup(
       const bio = outcomes
         ? memories.reduce((sum, m) => sum + m.value * m.outcomes, 0) / outcomes
         : 0;
+      const partial = memories.reduce(
+        (sum, m) => sum + (m.partialOutcomes ?? 0),
+        0,
+      );
       const meaning = !outcomes
-        ? "La valeur de l’action est encore inconnue : aucune digestion attribuée."
+        ? "La valeur de l’action est encore inconnue : aucune digestion attribuée ni bilan partiel."
         : bio > 0
           ? "La valeur actuellement mémorisée est positive ; elle peut favoriser cette action si Luma attend un événement."
           : bio < 0
@@ -63,9 +80,9 @@ export function instrumentalMarkup(
                 p.phase === "score"),
           )
           .slice(-12) ?? [];
-      return `<article class="instrumental-device"><h3>Levier #${d.id}</h3><p class="instrumental-summary">${attempts} tentatives · ${outcomes} bilans biologiques attribués. ${meaning}</p><p class="microcopy"><strong>Faits physiques du monde, invisibles au cerveau :</strong> réserve ${d.stock}/${d.capacity}, recharge restante ${Math.max(0, (d.readyAt - world.tick) / 10).toFixed(1)} s${d.pendingAt !== null ? ", production en attente" : ""}.</p><div class="observatory-table-wrap"><table><caption>Relations estimées par Luma, distinctes des faits physiques</caption><thead><tr><th>Situation</th><th>Essais / événements / digestions</th><th>Transition estimée / valeur</th></tr></thead><tbody>${memories.map((m) => `<tr><th>${situation(m.situation)}</th><td>${m.attempts} / ${m.successes} / ${m.outcomes}</td><td>${m.observations ? `${(m.probability * 100).toFixed(1)} %` : "inconnue"} / ${m.outcomes ? signed(m.value) : "inconnue"}</td></tr>`).join("") || '<tr><td colspan="3">Aucune expérience de cette action.</td></tr>'}</tbody></table></div>${chart}<div class="observatory-table-wrap"><table><caption>Évolution mesurée : estimation et score réellement calculé</caption><thead><tr><th>Tick / étape</th><th>Estimation / valeur</th><th>Score</th></tr></thead><tbody>${recent.map((p) => `<tr><td>${p.tick} / ${p.phase}<br>${situation(p.situation ?? "clear")}</td><td>${p.probability === undefined ? "—" : (p.probability * 100).toFixed(1) + " %"} / ${p.value === undefined ? "—" : signed(p.value)}</td><td>${p.score === undefined ? "Non calculé à cette étape" : signed(p.score)}</td></tr>`).join("")}</tbody></table></div></article>`;
+      return `<article class="instrumental-device"><h3>Levier #${d.id}</h3><p class="instrumental-summary">${attempts} tentatives · ${outcomes} bilans biologiques attribués, dont ${partial} partiels avant arrêt. ${meaning}</p><p class="microcopy"><strong>Faits physiques du monde, invisibles au cerveau :</strong> réserve ${d.stock}/${d.capacity}, recharge restante ${Math.max(0, (d.readyAt - world.tick) / 10).toFixed(1)} s${d.pendingAt !== null ? ", production en attente" : ""}.</p><div class="observatory-table-wrap"><table><caption>Relations estimées par Luma, distinctes des faits physiques</caption><thead><tr><th>Situation</th><th>Essais / événements / bilans</th><th>Transition estimée / valeur</th></tr></thead><tbody>${memories.map((m) => `<tr><th>${situation(m.situation)}</th><td>${m.attempts} / ${m.successes} / ${m.outcomes}</td><td>${m.observations ? `${(m.probability * 100).toFixed(1)} %` : "inconnue"} / ${m.outcomes ? signed(m.value) : "inconnue"}</td></tr>`).join("") || '<tr><td colspan="3">Aucune expérience de cette action.</td></tr>'}</tbody></table></div>${chart}<div class="observatory-table-wrap"><table><caption>Évolution mesurée : estimation et score réellement calculé</caption><thead><tr><th>Tick / étape</th><th>Estimation / valeur</th><th>Score</th></tr></thead><tbody>${recent.map((p) => `<tr><td>${p.tick} / ${p.phase}<br>${situation(p.situation ?? "clear")}</td><td>${p.probability === undefined ? "—" : (p.probability * 100).toFixed(1) + " %"} / ${p.value === undefined ? "—" : signed(p.value)}</td><td>${p.score === undefined ? "Non calculé à cette étape" : signed(p.score)}</td></tr>`).join("")}</tbody></table></div></article>`;
     })
     .join(
       "",
-    )}<p class="microcopy">Une absence réduit l’estimation seulement si toute la fenêtre d’observation a été couverte. Une baie sans ingestion ou dont les effets sont nocifs n’apporte pas automatiquement une récompense. Une association négative n’interdit pas tout essai : la curiosité demeure.</p>`;
+    )}${evidence}<p class="microcopy">Une absence réduit l’estimation seulement si toute la fenêtre d’observation a été couverte. Une baie sans ingestion ou dont les effets sont nocifs n’apporte pas automatiquement une récompense. Une association négative n’interdit pas tout essai : la curiosité demeure.</p>`;
 }
