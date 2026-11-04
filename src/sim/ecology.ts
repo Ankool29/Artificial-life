@@ -1,3 +1,4 @@
+import type { EcologicalTrace } from "./ecological-diagnostics";
 import { clamp, CUES, type Cue } from "./types";
 import { hashSeed, random } from "./random";
 import { addFood, FOOD_RECIPES } from "./food";
@@ -272,7 +273,10 @@ function die(e: EcologyState, p: Plant): void {
 
 // This physical boundary has no Creature, brain, hunger, genes or action input.
 // The ecological RNG is separate; all fluxes below use one second per update.
-export function updateEcology(world: EcologyWorld): void {
+export function updateEcology(
+  world: EcologyWorld,
+  observe?: (trace: EcologicalTrace) => void,
+): void {
   const e = world.ecology;
   if (!e || ++e.phase < ECOLOGY_INTERVAL) return;
   e.phase = 0;
@@ -286,6 +290,11 @@ export function updateEcology(world: EcologyWorld): void {
       e.budgets.minerals.output += f.minerals;
       e.budgets.water.output += f.water;
       e.counters.removedFruits++;
+      observe?.({
+        event: "removed-fruit",
+        foodId: f.foodId,
+        plantId: f.plantId,
+      });
       continue;
     }
     if (e.time >= f.expiresAt) {
@@ -293,6 +302,7 @@ export function updateEcology(world: EcologyWorld): void {
       litter(e, e.soil[f.cell]!, f.energy, f.minerals);
       addWater(e, e.soil[f.cell]!, f.water);
       e.counters.decayed++;
+      observe?.({ event: "decay", foodId: f.foodId, plantId: f.plantId });
       continue;
     }
     retained.push(f);
@@ -410,6 +420,18 @@ export function updateEcology(world: EcologyWorld): void {
       100,
     );
     if (p.health <= 0) {
+      observe?.({
+        event: "death",
+        plant: structuredClone(p),
+        damage,
+        conditions: {
+          dormantExpired: dormant && p.age > 240,
+          waterDeficit: !dormant && p.water < 0.5,
+          energyDeficit: !dormant && p.energy < 0.2,
+          mineralDeficit: !dormant && nutrition < 0.15,
+          oldAge: p.age > p.longevity,
+        },
+      });
       die(e, p);
       continue;
     }
@@ -429,6 +451,7 @@ export function updateEcology(world: EcologyWorld): void {
         p.biomass += 1.5;
         stage(p, "growing");
         e.counters.germinated++;
+        observe?.({ event: "germination", plantId: p.id, variety: p.variety });
       }
     }
     if (leafy) {
@@ -476,6 +499,12 @@ export function updateEcology(world: EcologyWorld): void {
           p.bud = null;
           p.fruitsProduced++;
           e.counters.produced++;
+          observe?.({
+            event: "fruit",
+            plantId: p.id,
+            variety: p.variety,
+            foodId: world.foods.at(-1)!.id,
+          });
           if (!old) stage(p, "mature");
         }
       }
@@ -528,6 +557,12 @@ export function updateEcology(world: EcologyWorld): void {
       p.seedsProduced++;
       p.seedTimer = 120;
       e.counters.born++;
+      observe?.({
+        event: "seed",
+        plantId: p.id,
+        variety: p.variety,
+        childId: e.plants.at(-1)!.id,
+      });
     }
   }
   e.plants = e.plants.filter((p) => p.stage !== "dead" || p.stageAge < 45);

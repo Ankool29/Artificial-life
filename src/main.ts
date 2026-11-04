@@ -1,3 +1,5 @@
+import { EcologicalObservatory } from "./observatory/ecological";
+import { createEcologicalPanel } from "./ui/ecological-observatory";
 import "./style.css";
 import {
   activeProfile,
@@ -18,7 +20,7 @@ import { addObject, removeObject } from "./sim/objects";
 import { addDispenser, refillDevice, removeDevice } from "./sim/devices";
 import { OBJECT_COLORS, OBJECT_NAMES } from "./ui/object-info";
 import { deserialize, serialize } from "./sim/persistence";
-import { addFood, createLivingWorld, step } from "./sim/world";
+import { addFood, createLivingWorld } from "./sim/world";
 import {
   CUES,
   DT,
@@ -125,6 +127,20 @@ let toastTimer: ReturnType<typeof setTimeout>;
 let storageFailed = false;
 const renderer = new Renderer($<HTMLCanvasElement>("world"));
 const observatory = new LearningObservatory();
+const ecologicalObserver = new EcologicalObservatory();
+const ecologicalPanel = createEcologicalPanel(
+  () => world,
+  ecologicalObserver,
+  () => save(),
+);
+document.querySelector("main footer")!.before(ecologicalPanel.element);
+const ecologicalButton = document.createElement("button");
+ecologicalButton.id = "open-ecological-observatory";
+ecologicalButton.setAttribute("aria-controls", "ecological-observatory");
+ecologicalButton.setAttribute("aria-expanded", "false");
+ecologicalButton.textContent = "Observatoire écologique et mortalité";
+ecologicalButton.addEventListener("click", () => ecologicalPanel.open());
+document.querySelector(".laboratory-entry")!.after(ecologicalButton);
 const observatoryUI = createObservatoryPanel(() => laboratory, observatory);
 document.querySelector("main footer")!.before(observatoryUI.element);
 const observatoryButton = document.createElement("button");
@@ -148,7 +164,8 @@ const vegetation = createEcologyTools(
   refreshEcology,
   toast,
   () => {
-    for (let i = 0; i < 600; i++) step(world, observatory.observerFor(world));
+    for (let i = 0; i < 600; i++)
+      ecologicalObserver.step(world, observatory.observerFor(world));
     refreshEcology();
   },
 );
@@ -160,6 +177,10 @@ tools
     '<button id="plant-tab" aria-pressed="false">Végétation</button>',
   );
 function refreshEcology(): void {
+  ecologicalObserver.capture(
+    world,
+    "Commande de la palette végétale ; état relevé après intervention.",
+  );
   accumulator = 0;
   previous = performance.now();
   sync();
@@ -207,10 +228,26 @@ try {
   );
 }
 
+function restoreEcologicalReports(): void {
+  try {
+    ecologicalObserver.restoreReports(
+      laboratory.profiles,
+      localStorage.getItem("luma.ecological-reports.v1") ?? "{}",
+    );
+  } catch {
+    /* Reports never block a valid game save. */
+  }
+}
+restoreEcologicalReports();
+
 function save(announce = false): void {
   try {
     localStorage.setItem(LAB_STORAGE_KEY, serializeLaboratory(laboratory));
     localStorage.setItem(STORAGE_KEY, serialize(world));
+    localStorage.setItem(
+      "luma.ecological-reports.v1",
+      ecologicalObserver.exportReports(laboratory.profiles),
+    );
     if (announce) toast("Laboratoire et profils sauvegardés sur cet appareil.");
   } catch {
     if (!storageFailed || announce)
@@ -224,6 +261,7 @@ function setWorld(next: typeof world): void {
   world = next;
   accumulator = 0;
   previous = performance.now();
+  restoreEcologicalReports();
   sync();
   renderer.draw(
     world,
@@ -298,6 +336,11 @@ function sync(): void {
   vegetation.render();
   renderer.plantSelection = vegetation.selectedId;
   observatoryUI.render();
+  ecologicalPanel.render();
+  const death = ecologicalObserver.inspect(world).death;
+  ecologicalButton.textContent = death
+    ? "Consulter le rapport de décès et l’écologie"
+    : "Observatoire écologique et mortalité";
   if (!inspector) return;
   $("age").textContent =
     world.ecology?.creaturePresent === false
@@ -560,6 +603,7 @@ const labUI = createLaboratoryDialog(
   () => laboratory,
   () => {
     world = activeProfile(laboratory).world;
+    restoreEcologicalReports();
     accumulator = 0;
     previous = performance.now();
     sync();
@@ -571,6 +615,8 @@ const labUI = createLaboratoryDialog(
     );
   },
   observatory,
+  (w, ticks) =>
+    ecologicalObserver.advance(w, ticks, observatory.observerFor(w)),
 );
 $("open-lab").addEventListener("click", () => labUI.open());
 const dialogs = [
@@ -604,6 +650,7 @@ $("load-local").addEventListener("click", () => {
       const next = deserializeLaboratory(archived);
       laboratory = next;
       world = activeProfile(laboratory).world;
+      restoreEcologicalReports();
       accumulator = 0;
       previous = performance.now();
       sync();
@@ -666,6 +713,7 @@ $<HTMLInputElement>("file").addEventListener("change", async (event) => {
       const next = deserializeLaboratory(contents);
       laboratory = next;
       world = activeProfile(laboratory).world;
+      restoreEcologicalReports();
       accumulator = 0;
       previous = performance.now();
       sync();
@@ -704,7 +752,7 @@ function frame(now: number): void {
     if (!paused && !dialogs.some((dialog) => dialog.open)) {
       accumulator += elapsed * speed;
       while (accumulator >= DT) {
-        step(world, observatory.observerFor(world));
+        ecologicalObserver.step(world, observatory.observerFor(world));
         accumulator -= DT;
       }
     }

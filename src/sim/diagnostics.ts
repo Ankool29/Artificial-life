@@ -1,4 +1,8 @@
 import type {
+  EcologicalTrace,
+  PhysiologyTrace,
+} from "./ecological-diagnostics";
+import type {
   Action,
   Association,
   Cue,
@@ -71,8 +75,13 @@ export interface AbsorptionTrace {
   health: number;
   absorbedToxin: number;
   completed: boolean;
+  nutrients?: number;
+  mass?: number;
 }
 export type DiagnosticEvent = { tick: number } & (
+  | { kind: "ecology"; trace: EcologicalTrace }
+  | { kind: "physiology"; trace: PhysiologyTrace }
+  | { kind: "execution"; action: Action; moving: boolean; distance: number }
   | { kind: "instrumental"; trace: InstrumentalTrace }
   | { kind: "decision"; trace: DecisionTrace }
   | { kind: "ingestion"; food: Food }
