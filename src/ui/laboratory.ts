@@ -80,7 +80,7 @@ export function createLaboratoryDialog(
       lab.profiles.length >= MAX_PROFILES || !lab.environment;
     $<HTMLButtonElement>("lab-reuse").disabled = !selected.trial;
     $("lab-terrain").textContent = lab.environment
-      ? `Terrain mémorisé : ${lab.environment.id} · ${lab.environment.foods.length} aliments, ${lab.environment.objects.length} objets. Récupérations remises à zéro.`
+      ? `Terrain mémorisé : ${lab.environment.id} · ${lab.environment.foods.length} aliments, ${lab.environment.objects.length} objets${lab.environment.ecology ? `, ${lab.environment.ecology.plants.length} plantes et sol conservé` : ""}. Récupérations des objets remises à zéro.${lab.environment.ecology ? " Âge, ressources et phase écologiques conservés." : ""}`
       : "Aucun terrain mémorisé.";
     const c = selected.world.creature,
       needs = c.needs,

@@ -1721,3 +1721,115 @@ dialog > p {
   font-size: 13px;
   line-height: 1.85;
 }
+
+/* Ecological controls remain in the optional portrait placement palette. */
+.placement-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.placement-tabs button {
+  min-height: 44px;
+}
+.ecology-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+.ecology-heading span {
+  font-size: 11px;
+  color: #5d7462;
+}
+#plant-tools select {
+  max-width: 100%;
+  width: 100%;
+  min-height: 44px;
+  margin: 6px 0 12px;
+  border: 1px solid #b4c7a5;
+  border-radius: 10px;
+  padding: 8px;
+  background: #f7f6e8;
+  color: #315345;
+  font: inherit;
+  font-size: 13px;
+}
+#plant-tools label {
+  font-size: 12px;
+  color: #4d6754;
+}
+.eco-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.eco-actions button,
+#enable-ecology {
+  min-height: 44px;
+  border: 1px solid #b4c7a5;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: #f2f4df;
+  color: #315345;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.eco-actions button[aria-pressed="true"] {
+  background: #d7e4bd;
+  border-color: #55775b;
+}
+.plant-summary {
+  padding: 12px;
+  border: 1px solid #ccd7bd;
+  border-radius: 12px;
+  margin: 12px 0;
+  background: #f5f5e8;
+}
+.plant-summary h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+.plant-summary p {
+  margin: 0;
+  font-size: 12px;
+}
+#ecology-details {
+  border-top: 1px solid #d0dbc5;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+#ecology-details summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.eco-settings {
+  display: grid;
+  gap: 10px;
+}
+.eco-settings label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 6px;
+}
+.eco-settings input {
+  grid-column: 1;
+  min-height: 30px;
+  max-width: 100%;
+  width: 100%;
+  accent-color: #527954;
+}
+.eco-settings output {
+  grid-column: 2;
+  grid-row: auto;
+  font-variant-numeric: tabular-nums;
+}
+#eco-balance {
+  overflow-wrap: anywhere;
+}

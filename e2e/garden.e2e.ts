@@ -46,7 +46,7 @@ test("touch feeding, pause and speed controls work", async ({ page }) => {
   await expect(page.locator("#food-count")).toHaveText(
     `${count + 1} / 48 aliments`,
   );
-  await page.getByRole("button", { name: "Semer un trio" }).click();
+  await page.getByRole("button", { name: "Déposer un trio" }).click();
   await expect(page.locator("#food-count")).toHaveText(
     `${count + 4} / 48 aliments`,
   );
@@ -77,13 +77,11 @@ test("export, new seed and validated import preserve a playable world", async ({
   await page
     .getByRole("button", { name: "Sauvegardes et nouveau monde" })
     .click();
-  await page
-    .locator("#file")
-    .setInputFiles({
-      name: "broken.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"version":99}'),
-    });
+  await page.locator("#file").setInputFiles({
+    name: "broken.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"version":99}'),
+  });
   await expect(page.locator("#toast")).toContainText("Fichier invalide");
   await expect(page.locator("#seed-button")).toHaveText("browser-test");
   await page.locator("#file").setInputFiles(path!);
