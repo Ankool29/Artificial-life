@@ -3,6 +3,7 @@ import { createNeeds, createObjectBrain, INTERACTION_TICKS } from "./curiosity";
 import { GENE_RANGES } from "./genome";
 import { validInstrumental } from "./instrumental-persistence";
 import { migrateInstrumental } from "./instrumental-migration";
+import { validEcology } from "./ecology-persistence";
 
 const MAX_SAVE_BYTES = 100_000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -246,6 +247,11 @@ export function deserialize(json: string): World {
   )
     return invalid();
   migrateInstrumental(w as unknown as World);
+  if (
+    w.ecology !== undefined &&
+    (legacy || !validEcology(w.ecology, w as unknown as World))
+  )
+    return invalid();
   return w as unknown as World;
 }
 

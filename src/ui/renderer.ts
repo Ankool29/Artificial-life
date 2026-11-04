@@ -1,6 +1,7 @@
 import type { Cue, InteractiveObject, Point, World } from "../sim/types";
 import { OBJECT_COLORS } from "./object-info";
 import type { Device } from "../sim/instrumental-types";
+import type { Plant } from "../sim/ecology-types";
 
 export const COLORS: Record<Cue, string> = {
   amber: "#efc45f",
@@ -14,6 +15,7 @@ export const NAMES: Record<Cue, string> = {
 };
 
 export class Renderer {
+  plantSelection: number | null = null;
   private ctx: CanvasRenderingContext2D;
   private observer: ResizeObserver;
   private width = 600;
@@ -85,7 +87,7 @@ export class Renderer {
     ctx.ellipse(300, 340, 220, 242, -0.1, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < (world.ecology ? 0 : 34); i++) {
       const x = (i * 173 + 37) % 600;
       const y = (i * 109 + 23) % 680;
       if (x > 65 && x < 535 && y > 65 && y < 615) continue;
@@ -101,7 +103,9 @@ export class Renderer {
         i,
       );
     const c = world.creature;
-    if (showSenses && c.alive) {
+    const present = world.ecology?.creaturePresent !== false;
+    for (const plant of world.ecology?.plants ?? []) this.livingPlant(plant);
+    if (showSenses && c.alive && present) {
       ctx.strokeStyle = "#366d6660";
       ctx.fillStyle = "#ffffff0a";
       ctx.setLineDash([4, 8]);
@@ -135,13 +139,74 @@ export class Renderer {
     }
     for (const object of world.objects) {
       const active =
-        c.action.kind === "interact" && c.action.objectId === object.id;
+        present &&
+        c.action.kind === "interact" &&
+        c.action.objectId === object.id;
       this.object(object, active, object.availableAt > world.tick);
     }
     for (const device of world.instrumental?.devices ?? [])
       this.device(device, world.tick);
     for (const food of world.foods) this.food(food.x, food.y, food.cue);
-    this.creature(world, name);
+    if (present) this.creature(world, name);
+  }
+
+  private livingPlant(p: Plant): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.fillStyle = "#365b4929";
+    this.ellipse(0, 10, 15 + p.biomass / 5, 5);
+    if (p.id === this.plantSelection) {
+      ctx.strokeStyle = "#f8f3d4";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (p.stage === "seed") {
+      ctx.fillStyle = "#8e7954";
+      this.ellipse(0, 3, 4, 6, 0.7);
+    } else if (p.stage === "dead") {
+      ctx.strokeStyle = "#88765b";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-8, 7);
+      ctx.lineTo(7, -6);
+      ctx.moveTo(3, 0);
+      ctx.lineTo(10, 5);
+      ctx.stroke();
+    } else {
+      const scale =
+        p.stage === "germinating"
+          ? 0.3
+          : 0.4 + 0.65 * Math.sqrt(p.biomass / 40);
+      ctx.scale(scale, scale);
+      ctx.strokeStyle = p.stage === "senescent" ? "#8c7953" : "#4e7754";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 12);
+      ctx.quadraticCurveTo(4, -5, 0, -35);
+      ctx.stroke();
+      const leaves = p.stage === "germinating" ? 2 : p.biomass < 15 ? 4 : 6;
+      for (let i = 0; i < leaves; i++) {
+        ctx.fillStyle =
+          p.stage === "senescent"
+            ? "#b3a163"
+            : p.health < 45
+              ? "#9eaa72"
+              : i % 2
+                ? "#628e64"
+                : "#8caf70";
+        this.ellipse(i % 2 ? 10 : -10, -5 - i * 5, 13, 5, i % 2 ? -0.6 : 0.6);
+      }
+      if (p.bud) {
+        ctx.fillStyle = COLORS[p.variety];
+        ctx.globalAlpha = 0.35 + 0.65 * (1 - p.bud.remaining / 20);
+        for (let i = 0; i < 3; i++)
+          this.ellipse(-8 + i * 8, -34 - (i % 2) * 4, 4, 5);
+      }
+    }
+    ctx.restore();
   }
 
   private device(d: Device, tick: number): void {

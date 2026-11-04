@@ -15,7 +15,7 @@ npm run dev
 
 Ouvrir l’adresse affichée par Vite. Pour jouer sur Android depuis le même réseau Wi-Fi, ouvrir `http://<IP-de-votre-ordinateur>:5173` sur le téléphone ; autoriser le port dans le pare-feu local si nécessaire. Pour GitHub Pages, `npm run build` produit `dist/` avec le préfixe `/Artificial-life/`. Aucun serveur applicatif ni compte nécessaire.
 
-1. Choisir un aliment puis toucher le jardin pour le déposer. « Semer un trio » en ajoute trois avec des positions reproductibles.
+1. Choisir un aliment puis toucher le jardin pour le déposer. « Déposer un trio » en ajoute trois avec des positions reproductibles.
 2. Observer Milo choisir, se déplacer et manger. Il n’obéit pas au doigt ; vous entretenez son environnement.
 3. Attendre la digestion (environ 4 à 13 secondes selon le nombre de repas), puis comparer ses préférences dans « Observer Milo ». Plusieurs expériences font évoluer la mémoire. Les vitesses 2× et 4× accélèrent la simulation.
 4. Maintenir une alimentation suffisante ; les toxines et la famine peuvent conduire à la mort. Le menu sauvegarde permet de faire éclore une nouvelle vie.
@@ -70,6 +70,16 @@ Les liens entre action, ressource et digestion sont conservés indépendamment d
 
 [Explication et compatibilité](docs/consequence-attribution.md) · [Comparaison ancien/nouveau, données et limites](docs/research/consequence-attribution-study.md)
 
+## Étape 5 : végétation vivante
+
+Les nouveaux jardins contiennent neuf graines vivantes. Elles prélèvent eau et minéraux dans un sol local, utilisent la lumière, grandissent, produisent des fruits, dispersent des graines et meurent. Les fruits sont des aliments ordinaires ; Luma les découvre et les digère avec son cerveau et sa physiologie existants. Le jardin peut manquer de ressources ou s’éteindre.
+
+La palette **Végétation** permet de consulter, semer et retirer une plante. Sa **Vue écologique détaillée** affiche les stocks et bilans, permet de régler les apports et la lumière, et d’observer le jardin sans créature. **Avancer 60 s** fait évoluer tout le monde actif. Les plantes continuent après le décès ; pause, onglet masqué et profils inactifs restent suspendus. Les anciennes sauvegardes conservent leur terrain classique jusqu’à une introduction explicite de graines.
+
+La campagne publiée comprend **96 simulations d’une heure**. Sans créature, les douze terrains favorables produisent chacun des fruits et des descendants ; le milieu pauvre s’éteint dans les douze essais. Ces observations ne démontrent pas une stabilité écologique à long terme ni une survie garantie de Luma.
+
+[Mécanismes, bilans et compatibilité](docs/ecology.md) · [Protocoles, résultats et limites](docs/research/ecology-study.md) · [Données brutes](docs/research/ecology-results.json)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -102,6 +112,10 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | `diagnostics.ts`                  | Charges de diagnostic détachées, absentes de l’état sauvegardé                                 |
 | `src/observatory/`                | Capture bornée et protocoles sur copies isolées                                                |
 | `src/ui/observatory.ts`           | Dernière décision, associations, chronologie et comparaison de deux profils                    |
+| `ecology.ts`, `ecology-types.ts` | Plantes individuelles, sol local, reproduction et flux physiques indépendants de la créature |
+| `ecology-persistence.ts` | Validation des plantes, aliments, identités et bilans écologiques |
+| `food.ts` | Recettes et création des aliments historiques, partagées avec les plantes |
+| `src/ui/ecology.ts` | Palette végétale et vue écologique facultative |
 | `devices.ts`                      | Physique indépendante des distributeurs : réserve, production, recharge                        |
 | `instrumental.ts`                 | Perception, transitions, épisodes et crédit biologique différé                                 |
 | `instrumental-persistence.ts`     | Validation de l’extension cognitive et physique optionnelle                                    |
@@ -117,6 +131,7 @@ Voir [la conception détaillée](docs/architecture.md) pour les équations, comp
 - Le format actuel est **v2**. Les sauvegardes **v1** sont migrées automatiquement : valeurs biologiques, préférences alimentaires, digestion, action, temps et hasard sont conservés ; les besoins et la mémoire des objets sont ajoutés sans tirage aléatoire. Les v2 conservent aussi les objets, leur récupération et une interaction en cours. La clé locale existante est conservée pour retrouver les jardins déjà sauvegardés.
 - Les nouveaux génomes sont versionnés v2 à l’intérieur des mondes ; les génomes v1 continuent d’utiliser leurs équations d’origine. L’archive complète du laboratoire possède son propre format versionné et conserve aussi les ascendants génétiques et les terrains initiaux des essais.
 - Les machines introduisent une extension instrumentale optionnelle versionnée, sans changer le format de base des anciens mondes. Les délais physiques, mémoires, épisodes et crédits de digestion sont conservés ; l’historique de diagnostic reste uniquement en mémoire.
+- L’extension écologique optionnelle conserve plantes, sol, fruits, bilans et hasard indépendant. Les captures de terrain conservent aussi le temps et la phase écologiques pour reproduire un environnement identique.
 - Une même graine **et la même séquence de commandes aux mêmes ticks** reproduisent l’évolution dans le même runtime. Le temps mural, la fréquence d’affichage et l’ouverture du panneau ne modifient pas la simulation.
 - L’onglet masqué et les dialogues suspendent la simulation. Pause et vitesse sont des préférences d’affichage, pas un état biologique sauvegardé.
 - Les fonctions trigonométriques peuvent différer de quelques bits entre moteurs JavaScript : une identité binaire entre moteurs différents n’est pas garantie.
@@ -136,8 +151,8 @@ Sur un système fournissant déjà Chromium : `CHROMIUM_PATH=/usr/bin/chromium n
 
 ## Périmètre du prototype
 
-Il s’agit d’un modèle biologique simplifié : la transmission et les mutations sont contrôlées au laboratoire, sans reproduction autonome, cohabitation, réseaux neuronaux, population, microbiome ni sélection dans le terrarium. Le génome influence les mécanismes ; il ne code pas des préférences alimentaires ou d’objets. Le cerveau est un système d’apprentissage associatif tabulaire. Les aliments ont des recettes physiques ; des compositions ou physiologies différentes produisent d’autres associations sans modifier le cerveau.
+Il s’agit d’un modèle biologique simplifié : la transmission et les mutations sont contrôlées au laboratoire, sans reproduction animale autonome, cohabitation, réseaux neuronaux, population animale, microbiome ni sélection animale dans le terrarium. Le génome influence les mécanismes ; il ne code pas des préférences alimentaires ou d’objets. Le cerveau est un système d’apprentissage associatif tabulaire. Les aliments ont des recettes physiques ; des compositions ou physiologies différentes produisent d’autres associations sans modifier le cerveau.
 
-Calcul à 10 Hz, réévaluation habituelle des décisions toutes les 2 s (avec relance après une action), dessin plafonné à 30 images/s, mises à jour du panneau à 4 Hz, densité de pixels plafonnée à 2, 48 aliments et 12 objets maximum. La performance sur un appareil Android physique reste à mesurer.
+Calcul à 10 Hz, réévaluation habituelle des décisions toutes les 2 s (avec relance après une action), dessin plafonné à 30 images/s, mises à jour du panneau à 4 Hz, densité de pixels plafonnée à 2, 48 aliments et 12 objets maximum ; écologie à 1 Hz, 25 zones de sol et 36 plantes maximum (graines et cadavres inclus). La performance sur un appareil Android physique reste à mesurer.
 
 Tous les dessins sont procéduraux et originaux. Aucun personnage, graphisme, son ou contenu de Creatures n’est utilisé. Les polices Google sont facultatives : la mise en page dispose de polices système de secours. Aucune télémétrie.

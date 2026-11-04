@@ -31,42 +31,11 @@ import {
 } from "./instrumental";
 import type { GutCredit, InstrumentalTrace } from "./instrumental-types";
 import { migrateInstrumental } from "./instrumental-migration";
-import {
-  clamp,
-  CUES,
-  DT,
-  MAX_FOODS,
-  type Cue,
-  type Genome,
-  type World,
-  type WorldEvent,
-} from "./types";
+import { enableEcology, updateEcology, recordFruitIngestion } from "./ecology";
+import { CUES, DT, type Genome, type World, type WorldEvent } from "./types";
 
-export const FOOD_RECIPES: Record<
-  Cue,
-  { nutrients: number; toxins: number; mass: number }
-> = {
-  amber: { nutrients: 28, toxins: 0, mass: 10 },
-  blue: { nutrients: 15, toxins: 0, mass: 10 },
-  rose: { nutrients: 5, toxins: 10, mass: 10 },
-};
-
-export function addFood(world: World, cue: Cue, x: number, y: number): boolean {
-  if (
-    world.foods.length >= MAX_FOODS ||
-    !Number.isFinite(x) ||
-    !Number.isFinite(y)
-  )
-    return false;
-  world.foods.push({
-    id: world.nextId++,
-    cue,
-    x: clamp(x, 22, world.width - 22),
-    y: clamp(y, 22, world.height - 22),
-    ...FOOD_RECIPES[cue],
-  });
-  return true;
-}
+export { addFood, FOOD_RECIPES } from "./food";
+import { addFood } from "./food";
 
 export function createWorld(
   seed = "luma-01",
@@ -122,12 +91,29 @@ function event(world: World, data: Omit<WorldEvent, "tick">): void {
   if (world.events.length > 32) world.events.shift();
 }
 
+export function createLivingWorld(seed = "luma-01", genome?: Genome): World {
+  const world = createWorld(seed, genome);
+  enableEcology(world);
+  return world;
+}
+
+export function setCreaturePresence(world: World, present: boolean): boolean {
+  if (!world.ecology) return false;
+  world.ecology.creaturePresent = present;
+  // Observation was interrupted. Do not mistake the absence for a continuously
+  // covered action window when this preserved individual returns to the garden.
+  if (!present)
+    for (const e of world.instrumental?.episodes ?? []) e.covered = false;
+  return true;
+}
+
 // Exactly one 100 ms tick, no clocks, DOM, storage, or Math.random in this module.
 export function step(world: World, observe?: SimulationObserver): void {
   const c = world.creature;
-  if (!c.alive) return;
+  if (!c.alive && !world.ecology) return;
   migrateInstrumental(world);
   world.tick++;
+  updateEcology(world);
   const instrumentalObserver = observe
     ? (trace: InstrumentalTrace) =>
         observe({ kind: "instrumental", tick: world.tick, trace })
@@ -141,6 +127,7 @@ export function step(world: World, observe?: SimulationObserver): void {
         event: "resource",
       });
   }
+  if (!c.alive || world.ecology?.creaturePresent === false) return;
   if (world.instrumental) {
     observeResources(
       world,
@@ -209,6 +196,7 @@ export function step(world: World, observe?: SimulationObserver): void {
         if (food && ingest(c.metabolism, food)) {
           world.foods = world.foods.filter((item) => item.id !== id);
           c.meals++;
+          recordFruitIngestion(world, food.id);
           registerIngestion(world, food.id, instrumentalObserver);
           event(world, { kind: "meal", cue: food.cue });
           observe?.({ kind: "ingestion", tick: world.tick, food: { ...food } });

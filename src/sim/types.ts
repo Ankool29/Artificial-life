@@ -1,3 +1,4 @@
+import type { EcologyState } from "./ecology-types";
 import type { InstrumentalState } from "./instrumental-types";
 export type Cue = "amber" | "blue" | "rose";
 export const CUES: readonly Cue[] = ["amber", "blue", "rose"];
@@ -130,6 +131,7 @@ export interface World {
   objects: InteractiveObject[];
   events: WorldEvent[];
   instrumental?: InstrumentalState;
+  ecology?: EcologyState;
 }
 export interface Observation {
   id: number;

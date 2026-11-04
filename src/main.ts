@@ -8,6 +8,7 @@ import {
   serializeLaboratory,
 } from "./lab/laboratory";
 import { createLaboratoryDialog } from "./ui/laboratory";
+import { createEcologyTools } from "./ui/ecology";
 import { createObservatoryPanel } from "./ui/observatory";
 import { LearningObservatory } from "./observatory/recorder";
 import { generateGenome, physiology, GENE_LABELS } from "./sim/genome";
@@ -17,7 +18,7 @@ import { addObject, removeObject } from "./sim/objects";
 import { addDispenser, refillDevice, removeDevice } from "./sim/devices";
 import { OBJECT_COLORS, OBJECT_NAMES } from "./ui/object-info";
 import { deserialize, serialize } from "./sim/persistence";
-import { addFood, createWorld, step } from "./sim/world";
+import { addFood, createLivingWorld, step } from "./sim/world";
 import {
   CUES,
   DT,
@@ -58,7 +59,7 @@ app.innerHTML = `
         <div class="garden-controls"><div class="time-controls"><button id="pause" class="icon-button" aria-label="Mettre en pause">${icon("pause")}</button><span class="divider"></span><button id="speed" class="speed" aria-label="Vitesse de simulation : 1 fois">1×</button></div><button id="inspect" class="inspect-button" aria-expanded="false" aria-controls="biology">${icon("eye")} Observer Milo</button></div><div class="food-dock" id="food-dock"></div>
       </section>
       <aside class="side-column">
-        <section class="care-card"><div class="section-heading"><span class="eyebrow">À VOUS DE CULTIVER</span><span class="step-number">01 — 03</span></div><h2>De petites attentions.<br> De grandes découvertes.</h2><p>Milo explore, mange et apprend de ses expériences. Repas et rencontres laissent une trace.</p><div class="care-instruction"><span class="instruction-icon">✦</span><p>Choisissez un aliment ou un objet, puis <strong>touchez le jardin</strong> pour le déposer.</p></div><div class="food-picker" role="group" aria-label="Aliment à déposer">${CUES.map((cue, index) => `<button class="food-choice ${index === 0 ? "selected" : ""}" data-cue="${cue}" aria-pressed="${index === 0}" aria-label="${NAMES[cue]}"><span class="food-art ${cue}"></span><span>${NAMES[cue].split(" ").slice(0, -1).join(" ")}<br> ${NAMES[cue].split(" ").at(-1)}</span><span class="selection-dot"></span></button>`).join("")}</div><div class="food-footer"><span id="food-count">12 / 48 aliments</span><button id="scatter" class="text-button">Semer un trio <span>+</span></button></div></section>
+        <section class="care-card"><div class="section-heading"><span class="eyebrow">À VOUS DE CULTIVER</span><span class="step-number">01 — 03</span></div><h2>De petites attentions.<br> De grandes découvertes.</h2><p>Milo explore, mange et apprend de ses expériences. Repas et rencontres laissent une trace.</p><div class="care-instruction"><span class="instruction-icon">✦</span><p>Choisissez un aliment ou un objet, puis <strong>touchez le jardin</strong> pour le déposer.</p></div><div class="food-picker" role="group" aria-label="Aliment à déposer">${CUES.map((cue, index) => `<button class="food-choice ${index === 0 ? "selected" : ""}" data-cue="${cue}" aria-pressed="${index === 0}" aria-label="${NAMES[cue]}"><span class="food-art ${cue}"></span><span>${NAMES[cue].split(" ").slice(0, -1).join(" ")}<br> ${NAMES[cue].split(" ").at(-1)}</span><span class="selection-dot"></span></button>`).join("")}</div><div class="food-footer"><span id="food-count">12 / 48 aliments</span><button id="scatter" class="text-button">Déposer un trio <span>+</span></button></div></section>
         <section id="biology" class="biology-card" hidden><div class="section-heading"><span class="eyebrow">SOUS LA SURFACE</span><button id="close-inspector" class="icon-button" aria-label="Fermer l’observation">${icon("close")}</button></div><div class="creature-title"><h2>Milo</h2><span id="age">0 min de vie</span></div><div id="vitals"></div><div class="memory-heading"><h3>Mémoire des saveurs</h3><span id="meal-count">0 repas</span></div><p class="microcopy">Les préférences naissent des effets de la digestion.</p><div id="memories"></div><div class="memory-heading"><h3>Motivations</h3></div><p class="microcopy">La faim, la curiosité, la fatigue et le stress orientent ses choix.</p><div id="motivations"></div><div class="memory-heading"><h3>Mémoire des objets</h3><span id="interaction-count">0 interaction</span></div><p class="microcopy">Les effets attendus sont appris par expérience, jamais connus à la naissance.</p><div id="object-memories"></div><label class="sense-toggle"><input id="senses" type="checkbox"> Voir sa perception dans le jardin</label><details><summary>Gènes & biochimie</summary><div id="genes"></div><p class="microcopy">Énergie : nutriments assimilés − dépenses. Toxines : absorption − détoxification. Les valeurs sont celles de ce modèle expérimental.</p></details><div class="journal"><h3>Dernières expériences</h3><ol id="journal"></ol></div></section>
         <div class="field-note"><span>NOTE DE TERRAIN</span><p>« Il ne sait pas encore ce qui est bon pour lui.<br>Il va l’apprendre. »</p><div><span class="note-line"></span> Le début d’une histoire</div></div>
       </aside>
@@ -98,14 +99,21 @@ function arrangeFeeding(): void {
 }
 portrait.addEventListener("change", arrangeFeeding);
 arrangeFeeding();
+document
+  .querySelector("#help-dialog .help-steps")!
+  .insertAdjacentHTML(
+    "afterend",
+    "<p>Dans <strong>Végétation</strong>, consultez une plante ou semez une graine. L’eau, les minéraux et la lumière orientent son développement ; ses fruits deviennent des aliments ordinaires. La vue écologique permet aussi d’observer le jardin sans créature. Les plantes poursuivent leur cycle après un décès. Les anciens jardins restent classiques tant que la végétation n’est pas introduite.</p>",
+  );
 const STORAGE_KEY = "luma.world.v1";
 const LAB_STORAGE_KEY = "luma.laboratory.v1";
-let world = createWorld();
+let world = createLivingWorld();
 let laboratory = createLaboratory(world);
 let renderedName = "";
 let selected: Cue = "amber";
 let selectedObject: ObjectCue = "chime";
-let placement: "food" | "object" | "remove" | "device" | "refill" = "food";
+let placement: "food" | "object" | "remove" | "device" | "refill" | "plant" =
+  "food";
 let paused = false;
 let speed = 1;
 let inspector = false;
@@ -135,6 +143,33 @@ observatoryUI.element
     observatoryButton.focus({ preventScroll: true });
   });
 document.querySelector(".laboratory-entry")!.after(observatoryButton);
+const vegetation = createEcologyTools(
+  () => world,
+  refreshEcology,
+  toast,
+  () => {
+    for (let i = 0; i < 600; i++) step(world, observatory.observerFor(world));
+    refreshEcology();
+  },
+);
+tools.append(vegetation.element);
+tools
+  .querySelector(".placement-tabs")!
+  .insertAdjacentHTML(
+    "beforeend",
+    '<button id="plant-tab" aria-pressed="false">Végétation</button>',
+  );
+function refreshEcology(): void {
+  accumulator = 0;
+  previous = performance.now();
+  sync();
+  save();
+  renderer.draw(
+    world,
+    inspector && $<HTMLInputElement>("senses").checked,
+    activeProfile(laboratory).name,
+  );
+}
 
 function toast(message: string): void {
   $("toast").textContent = message;
@@ -207,7 +242,8 @@ function setInspector(open: boolean): void {
 
 function sync(): void {
   const individual = activeProfile(laboratory);
-  $("active-individual").textContent = `Individu actif · ${individual.name}`;
+  $("active-individual").textContent =
+    `${world.ecology?.creaturePresent === false ? "Profil hors du jardin" : "Individu actif"} · ${individual.name}`;
   if (renderedName !== individual.name) {
     renderedName = individual.name;
     $("inspect").innerHTML = icon("eye");
@@ -229,35 +265,44 @@ function sync(): void {
     `${world.objects.length} / ${MAX_OBJECTS} objets`;
   $("scatter").toggleAttribute(
     "disabled",
-    world.foods.length > MAX_FOODS - 3 || !c.alive,
+    world.foods.length > MAX_FOODS - 3 || (!c.alive && !world.ecology),
   );
-  $("end-state").hidden = c.alive;
-  const state = !c.alive
-    ? "Milo se repose pour toujours"
-    : paused
-      ? "Le temps est suspendu"
-      : m.health < 35
-        ? "Milo est fragile · surveillez ses repas"
-        : hunger(m) > 0.7
-          ? "Milo a très faim"
-          : c.action.kind === "interact"
-            ? "Milo expérimente un objet"
-            : c.action.kind === "inspect"
-              ? "Un objet intrigue Milo…"
-              : c.action.kind === "use"
-                ? "Milo essaie un mécanisme"
-                : c.action.kind === "seek"
-                  ? "Une odeur attire Milo…"
-                  : m.stomach > 2
-                    ? "Milo digère et apprend"
-                    : c.action.kind === "wander"
-                      ? "Milo explore son jardin"
-                      : "Milo savoure un peu de calme";
+  $("end-state").hidden = c.alive || !!world.ecology;
+  const state =
+    world.ecology?.creaturePresent === false
+      ? "Profil hors du jardin · les plantes continuent"
+      : !c.alive
+        ? world.ecology
+          ? "La vie de Milo est finie · le jardin continue"
+          : "Milo se repose pour toujours"
+        : paused
+          ? "Le temps est suspendu"
+          : m.health < 35
+            ? "Milo est fragile · surveillez ses repas"
+            : hunger(m) > 0.7
+              ? "Milo a très faim"
+              : c.action.kind === "interact"
+                ? "Milo expérimente un objet"
+                : c.action.kind === "inspect"
+                  ? "Un objet intrigue Milo…"
+                  : c.action.kind === "use"
+                    ? "Milo essaie un mécanisme"
+                    : c.action.kind === "seek"
+                      ? "Une odeur attire Milo…"
+                      : m.stomach > 2
+                        ? "Milo digère et apprend"
+                        : c.action.kind === "wander"
+                          ? "Milo explore son jardin"
+                          : "Milo savoure un peu de calme";
   $("status").textContent = state.replaceAll("Milo", () => individual.name);
+  vegetation.render();
+  renderer.plantSelection = vegetation.selectedId;
   observatoryUI.render();
   if (!inspector) return;
   $("age").textContent =
-    `${Math.floor(seconds / 60)} min ${seconds % 60} s de vie`;
+    world.ecology?.creaturePresent === false
+      ? "Profil conservé hors du jardin"
+      : `${Math.floor(seconds / 60)} min ${seconds % 60} s de temps du monde`;
   const vitals: [string, number, string][] = [
     ["Énergie", m.energy, "energy"],
     ["Satiété", 100 * (1 - hunger(m)), "satiety"],
@@ -350,6 +395,8 @@ document.querySelectorAll<HTMLButtonElement>("[data-cue]").forEach((button) =>
 );
 function choosePlacement(showObjects: boolean): void {
   placement = showObjects ? "object" : "food";
+  vegetation.element.hidden = true;
+  $("plant-tab").setAttribute("aria-pressed", "false");
   picker.hidden = showObjects;
   foodFooter.hidden = showObjects;
   objectTools.hidden = !showObjects;
@@ -359,6 +406,17 @@ function choosePlacement(showObjects: boolean): void {
   $("object-hint").textContent =
     "Touchez le jardin pour déposer l’objet choisi.";
 }
+$("plant-tab").addEventListener("click", () => {
+  placement = "plant";
+  picker.hidden = true;
+  foodFooter.hidden = true;
+  objectTools.hidden = true;
+  vegetation.element.hidden = false;
+  $("food-tab").setAttribute("aria-pressed", "false");
+  $("object-tab").setAttribute("aria-pressed", "false");
+  $("plant-tab").setAttribute("aria-pressed", "true");
+  sync();
+});
 $("food-tab").addEventListener("click", () => choosePlacement(false));
 $("object-tab").addEventListener("click", () => choosePlacement(true));
 document
@@ -398,8 +456,12 @@ $("refill-device").addEventListener("click", () => {
   $("object-hint").textContent = "Touchez une machine pour remplir sa réserve.";
 });
 $("world").addEventListener("pointerdown", (event) => {
-  if (!world.creature.alive) return;
   const pos = renderer.position(event.clientX, event.clientY);
+  if (placement === "plant") {
+    vegetation.tap(pos);
+    return;
+  }
+  if (!world.creature.alive && !world.ecology) return;
   if (placement === "food") {
     if (addFood(world, selected, pos.x, pos.y))
       toast(`${NAMES[selected]} déposé.`);
@@ -620,7 +682,7 @@ $<HTMLInputElement>("file").addEventListener("change", async (event) => {
 });
 $("new-world").addEventListener("click", () => {
   const seed = $<HTMLInputElement>("seed").value.trim() || "luma-01";
-  setWorld(createWorld(seed, generateGenome(seed)));
+  setWorld(createLivingWorld(seed, generateGenome(seed)));
   activeProfile(laboratory).geneticSeed = seed;
   save();
   dialogs[1]!.close();

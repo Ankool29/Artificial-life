@@ -1,7 +1,8 @@
 import { generateGenome, inheritGenome } from "../sim/genome";
 import { deserialize } from "../sim/persistence";
 import { hashSeed } from "../sim/random";
-import { createWorld, advance } from "../sim/world";
+import { createWorld, createLivingWorld, advance } from "../sim/world";
+import type { EcologyState } from "../sim/ecology-types";
 import type { Food, Genome, InteractiveObject, World } from "../sim/types";
 import type { SimulationObserver } from "../sim/diagnostics";
 import type { Device } from "../sim/instrumental-types";
@@ -18,6 +19,7 @@ export interface EnvironmentSnapshot {
   foods: Food[];
   objects: InteractiveObject[];
   devices?: Device[];
+  ecology?: EcologyState;
 }
 export interface IndividualProfile {
   id: string;
@@ -116,7 +118,7 @@ export function addIndividual(
     parentId: parent?.id ?? null,
     parentGenome: parent ? structuredClone(parent.world.creature.genome) : null,
     trial: null,
-    world: createWorld(options.environmentSeed, genome),
+    world: createLivingWorld(options.environmentSeed, genome),
   });
 }
 
@@ -132,6 +134,7 @@ export function captureEnvironment(world: World): EnvironmentSnapshot {
       ...structuredClone(object),
       availableAt: 0,
     })),
+    ...(world.ecology ? { ecology: structuredClone(world.ecology) } : {}),
     ...(world.instrumental
       ? {
           devices: world.instrumental.devices.map((d) => ({
@@ -157,6 +160,7 @@ export function trialWorld(
   world.nextId = environment.nextId;
   world.foods = structuredClone(environment.foods);
   world.objects = structuredClone(environment.objects);
+  if (environment.ecology) world.ecology = structuredClone(environment.ecology);
   if (environment.devices) {
     world.instrumental = createInstrumentalState(world);
     world.instrumental.devices = structuredClone(environment.devices);
@@ -216,6 +220,7 @@ function validateEnvironment(value: unknown): EnvironmentSnapshot {
       nextId: value.nextId,
       foods: value.foods,
       objects: value.objects,
+      ...(value.ecology !== undefined ? { ecology: value.ecology } : {}),
       ...(value.devices !== undefined
         ? {
             instrumental: {
