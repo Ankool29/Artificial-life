@@ -1833,3 +1833,113 @@ dialog > p {
 #eco-balance {
   overflow-wrap: anywhere;
 }
+
+/* Optional ecological diagnostics, no horizontal scrolling on portrait screens. */
+#open-ecological-observatory {
+  margin: 8px 0 18px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #a9bfa1;
+  border-radius: 10px;
+  color: #315345;
+  background: #eef2df;
+  font: inherit;
+  cursor: pointer;
+}
+.ecological-observatory {
+  margin: 24px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ecological-observatory h3 {
+  margin-top: 22px;
+}
+.ecological-observatory h4 {
+  margin: 18px 0 8px;
+}
+.ecological-observatory p,
+.ecological-observatory li {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.ecological-observatory button,
+.ecological-observatory summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+.ecological-observatory button {
+  border: 1px solid #a9bfa1;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #eef2df;
+  color: #315345;
+}
+.ecological-observatory ol {
+  padding-left: 22px;
+}
+#eco-obs-events {
+  max-height: 350px;
+  overflow-y: auto;
+}
+.eco-figure {
+  margin: 20px 0;
+  max-width: 100%;
+}
+.eco-figure figcaption {
+  font-size: 14px;
+  font-weight: 600;
+}
+.eco-figure svg {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+}
+.eco-figure text {
+  font-size: 10px;
+  fill: #49624c;
+}
+.eco-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.eco-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 4px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.eco-occupancy {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.eco-occupancy div {
+  border: 1px solid #b7c7a6;
+  padding: 5px;
+  font-size: 12px;
+  text-align: center;
+}
+.eco-occupancy strong {
+  display: block;
+}
+.eco-occupancy span {
+  display: inline-block;
+  margin: 0 2px;
+}
+#eco-death-report {
+  border-top: 1px solid #bdcdb1;
+  margin-top: 20px;
+}
+.eco-figure svg {
+  height: auto;
+}
+.ecological-observatory .dialog-heading button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.eco-figure text {
+  font-size: 11px;
+}

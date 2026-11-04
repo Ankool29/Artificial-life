@@ -80,6 +80,18 @@ La campagne publiée comprend **96 simulations d’une heure**. Sans créature, 
 
 [Mécanismes, bilans et compatibilité](docs/ecology.md) · [Protocoles, résultats et limites](docs/research/ecology-study.md) · [Données brutes](docs/research/ecology-results.json)
 
+## Étape 5.1 : observatoire écologique et mortalité
+
+**Observatoire écologique et mortalité** affiche les populations par variété, les fruits disponibles et les ressources du sol. Ses détails facultatifs donnent les stades, l’occupation spatiale, les naissances, les morts et leurs facteurs réellement enregistrés. Une absence de fruits est distinguée de la disparition de toutes les plantes et graines d’une variété.
+
+Après un décès, le rapport sépare nourriture présente, rayon sensoriel, conditions de contact, ingestions et absorption réelle. Il conserve l’état final, les minutes récentes, les contributions métaboliques, la dernière décision et ses scores réellement calculés. Faits, hypothèses et données manquantes sont identifiés ; aucun comportement n’est modifié pour améliorer la survie.
+
+La capture passive est active par défaut ; le panneau peut rester fermé et la capture peut être suspendue. Les historiques sont bornés et restent en mémoire ; les rapports de décès sont conservés séparément sur cet appareil avec le monde sauvegardé correspondant. Les exports de jeu gardent leurs formats ; utiliser aussi **Exporter le relevé scientifique JSON** pour conserver le diagnostic.
+
+Validation : **48 essais appariés sans divergence**, rejeu identique des **96 trajectoires de l’étape 5**, **173 tests ordinaires** et **54 tests navigateur** réussis. Le rapport publie aussi un décès en jardin ordinaire avec quatorze aliments corail encore présents, avec les dégâts passés et scores enregistrés. Les performances Android physiques restent à mesurer.
+
+[Utilisation, passivité, budgets et persistance](docs/ecological-observatory.md) · [Protocole et résultats](docs/research/ecological-observatory-study.md) · [Données brutes](docs/research/ecological-observatory-results.json)
+
 ## Déploiement sur GitHub Pages
 
 Le workflow [Deploy Luma to GitHub Pages](.github/workflows/pages.yml) compile et publie `dist/` à chaque mise à jour de `main`, après activation de Pages. URL attendue : **https://ankool29.github.io/Artificial-life/**.
@@ -110,6 +122,8 @@ Le moteur dans `src/sim/` ne dépend ni du DOM, ni du canvas, ni du stockage du 
 | `src/lab/laboratory.ts`           | Profils indépendants, monde actif, terrains d’essai et archivage de la collection              |
 | `src/ui/laboratory.ts`            | Inspection des individus et expériences comparatives sans cohabitation                         |
 | `diagnostics.ts`                  | Charges de diagnostic détachées, absentes de l’état sauvegardé                                 |
+| `src/observatory/ecological.ts` | Capture écologique passive, diagnostic corporel, rapports et stockage séparé |
+| `src/ui/ecological-observatory.ts` | Graphiques, chronologie, carte et rapports de décès facultatifs |
 | `src/observatory/`                | Capture bornée et protocoles sur copies isolées                                                |
 | `src/ui/observatory.ts`           | Dernière décision, associations, chronologie et comparaison de deux profils                    |
 | `ecology.ts`, `ecology-types.ts` | Plantes individuelles, sol local, reproduction et flux physiques indépendants de la créature |

@@ -1,3 +1,4 @@
+import type { PhysiologyTrace } from "./ecological-diagnostics";
 import {
   clamp,
   DT,
@@ -34,7 +35,10 @@ export function metabolize(
   genome: Genome,
   moving: boolean,
   observe?: (trace: AbsorptionTrace) => void,
+  observePhysiology?: (trace: PhysiologyTrace) => void,
 ): Outcome[] {
+  const initialEnergy = observePhysiology ? m.energy : 0;
+  let toxinDamage = 0;
   const outcomes: Outcome[] = [];
   const traits = physiology(genome);
   const locomotion = genome.version === 2 ? genome.genes.speed / 38 : 1;
@@ -44,6 +48,7 @@ export function metabolize(
     0,
     100,
   );
+  const energySpent = observePhysiology ? initialEnergy - m.energy : 0;
   // Finite enzyme throughput shared across the gut; each meal takes several seconds.
   const throughput =
     (2.4 * DT * traits.digestionRate) / Math.max(1, m.gut.length);
@@ -62,6 +67,7 @@ export function metabolize(
       0,
       100,
     );
+    if (observePhysiology) toxinDamage += previousHealth - m.health;
     // Reinforcement from actual internal changes, never from a food's category.
     bolus.reward +=
       (m.energy - previousEnergy) / 25 + (m.health - previousHealth) / 14;
@@ -69,6 +75,8 @@ export function metabolize(
     bolus.toxins = Math.max(0, bolus.toxins - absorbedToxin);
     bolus.remaining = Math.max(0, bolus.remaining - amount);
     observe?.({
+      nutrients,
+      mass: amount,
       slot: diagnosticSlot++,
       cue: bolus.cue,
       energy: m.energy - previousEnergy,
@@ -82,8 +90,21 @@ export function metabolize(
   m.gut = m.gut.filter((bolus) => bolus.remaining >= 1e-8);
   m.stomach = m.gut.reduce((sum, bolus) => sum + bolus.remaining, 0);
   m.toxins = Math.max(0, m.toxins - genome.genes.detox * DT);
+  const healthBeforeStarvation = observePhysiology ? m.health : 0;
   if (m.energy < 1) m.health = Math.max(0, m.health - 1.6 * DT);
+  const starvationDamage = observePhysiology
+    ? healthBeforeStarvation - m.health
+    : 0;
+  const healthBeforeRecovery = observePhysiology ? m.health : 0;
   if (m.energy > 35 && m.toxins < 1)
     m.health = Math.min(100, m.health + 0.13 * DT);
+  observePhysiology?.({
+    energySpent,
+    toxinDamage,
+    starvationDamage,
+    recovery: m.health - healthBeforeRecovery,
+    energyAfterDigestion: m.energy,
+    healthAfterMetabolism: m.health,
+  });
   return outcomes;
 }

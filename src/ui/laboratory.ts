@@ -1,3 +1,4 @@
+import type { World } from "../sim/types";
 import {
   activeProfile,
   activateProfile,
@@ -32,6 +33,7 @@ export function createLaboratoryDialog(
   getLab: () => Laboratory,
   changed: () => void,
   observatory: LearningObservatory,
+  advanceObserved?: (world: World, ticks: number) => void,
 ): { dialog: HTMLDialogElement; open: () => void } {
   const dialog = document.createElement("dialog");
   dialog.id = "lab-dialog";
@@ -135,11 +137,13 @@ export function createLaboratoryDialog(
     action(() => {
       if (selectedId !== getLab().activeId)
         throw new Error("Activez ce profil avant de le faire évoluer.");
-      advanceActive(
-        getLab(),
-        300,
-        observatory.observerFor(activeProfile(getLab()).world),
-      );
+      if (advanceObserved) advanceObserved(activeProfile(getLab()).world, 300);
+      else
+        advanceActive(
+          getLab(),
+          300,
+          observatory.observerFor(activeProfile(getLab()).world),
+        );
     }),
   );
   $("lab-capture").addEventListener("click", () =>

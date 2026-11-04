@@ -113,7 +113,12 @@ export function step(world: World, observe?: SimulationObserver): void {
   if (!c.alive && !world.ecology) return;
   migrateInstrumental(world);
   world.tick++;
-  updateEcology(world);
+  updateEcology(
+    world,
+    observe
+      ? (trace) => observe({ kind: "ecology", tick: world.tick, trace })
+      : undefined,
+  );
   const instrumentalObserver = observe
     ? (trace: InstrumentalTrace) =>
         observe({ kind: "instrumental", tick: world.tick, trace })
@@ -156,6 +161,9 @@ export function step(world: World, observe?: SimulationObserver): void {
     );
     c.nextDecision = world.tick + 20;
   }
+  const execution = observe
+    ? { action: structuredClone(c.action), x: c.x, y: c.y }
+    : undefined;
   let target: { x: number; y: number } | undefined;
   if (c.action.kind === "seek") {
     const id = c.action.foodId;
@@ -238,6 +246,14 @@ export function step(world: World, observe?: SimulationObserver): void {
       }
     }
   }
+  if (execution)
+    observe?.({
+      kind: "execution",
+      tick: world.tick,
+      action: execution.action,
+      moving,
+      distance: Math.hypot(c.x - execution.x, c.y - execution.y),
+    });
   const completedSlots: number[] = [];
   const completedCredits: (GutCredit | undefined)[] = [];
   for (const outcome of metabolize(
@@ -256,6 +272,9 @@ export function step(world: World, observe?: SimulationObserver): void {
             completedCredits.push(world.instrumental.gut[trace.slot]);
           }
         }
+      : undefined,
+    observe
+      ? (trace) => observe({ kind: "physiology", tick: world.tick, trace })
       : undefined,
   )) {
     const before = observe ? { ...c.brain[outcome.cue] } : undefined;
